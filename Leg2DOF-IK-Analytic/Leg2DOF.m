@@ -9,18 +9,16 @@ p.LineWidth = 2;
 p.Marker = 'o';
 p.MarkerSize = 6;
 
+
+
 trajB = animatedline();
 
+
 trajC = animatedline();
+trajC.Color = 'red';
 trajC_Marker = animatedline();
+trajC_Marker.Color = 'red';
 trajC_Marker.Marker = 'o';
-
-trajD = animatedline();
-trajD.Color = 'red';
-
-trajD_Marker = animatedline();
-trajD_Marker.Color = 'red';
-trajD_Marker.Marker = 'o';
 
 axis equal
 grid on
@@ -37,9 +35,9 @@ Iterations =  (Time / dt);
 %---------------------------------------------Model properities
 global L1 L2 L3
 
-L1 = 0.5;
-L2 = 0.5;
-L3 = 0.45;
+L1 = 0.45;
+L2 = 0.45;
+
 %---------------------------------------------Variables to save simulation data
 
 global x_pos
@@ -51,9 +49,9 @@ global Data_XB Data_YB
 global Data_XC Data_YC
 global Data_XD Data_YD
 global Data_VX Data_VY
-global Data_V Data_dV
-global Data_phi3
-global Data_phi2
+global Data_r Data_r_dt
+global Data_q1
+global Data_q2
 
 
 Data_T = zeros(1,Iterations+1);
@@ -62,51 +60,42 @@ Data_XB = zeros(1,Iterations+1); Data_YB = zeros(1,Iterations+1);
 Data_XC = zeros(1,Iterations+1); Data_YC = zeros(1, Iterations+1);
 Data_XD = zeros(1,Iterations+1); Data_YD = zeros(1, Iterations+1);
 Data_VX = zeros(1, Iterations+1); Data_VY = zeros(1, Iterations+1);
-Data_V = zeros(1, Iterations+1); Data_dV = zeros(1, Iterations+1);
-Data_phi3 = zeros(1, Iterations+1);
-Data_phi2 = zeros(1, Iterations+1);
+Data_r = zeros(1, Iterations+1); Data_r_dt = zeros(1, Iterations+1);
+Data_q1 = zeros(1, Iterations+1);
+Data_q2 = zeros(1, Iterations+1);
 
 
 
 %---------------------------------------------Initial conditions
-phi3 = -13 * (pi / 180);        % bedro
-phi2 = 5 * (pi / 180);          % koleno
-phi3_ = phi3;
-phi2_ = phi2;
+q1 = -13 * (pi / 180);        % bedro
+q2 = 5 * (pi / 180);          % koleno
+
 
 rA = [
-    L1*sin(phi3);
-    -L1*cos(phi3);
+    L1*sin(q1);
+    -L1*cos(q2);
 ];
 
-rC = [
-     L1*sin(phi3) + L3*sin(phi3 - phi2);
-    -L1*cos(phi3) - L3*cos(phi3 - phi2);
- ]; 
-
 rB = [
-     L1*sin(phi3) + L2*sin(phi3 - phi2);
-    -L1*cos(phi3) - L2*cos(phi3 - phi2);
+     L1*sin(q1) + L2*sin(q1 - q2);
+    -L1*cos(q1) - L2*cos(q1 - q2);
  ]; 
 
+rC = rB;
+rC_0 = rB;
 
-rC_p = rC;
-rC_pp = rC;
-    
-rD = rC;
-rD_0 = rD;
+% residual
+r = (rC-rB); 
+r_prev = r; 
 
-V = (rD-rC);
-prevV = V;
-
-%---------------------------------------------B trajectory parameters
+%---------------------------------------------C trajectory parameters
 
 % x
 v0_x = 0; v1_x = 0;
 a0_x = 0; a1_x = 0;
 % y
 v0_y = 0; v1_y = 0;
-a0_y = 0.3; a1_y = 0;
+a0_y = 0; a1_y = 0;
 
 L = 0.5;
 H = 0.05;
@@ -128,105 +117,95 @@ for it = 0:Iterations
     
     t = it*dt;
      w = 10;
-%     rD(1) = rD_0(1) + get_poli5_val(p5x, t); 
-%     rD(2) = rD_0(2) + get_poli6_val(p6y, t);
-      rD(1) = rD_0(1)*cos(-w*t);
-      rD(2) = rD_0(1)*sin(-w*t) + rD_0(2);
-%     rB(1) = x_pos;
-%     rB(2) = y_pos;
+%     rC(1) = rD_0(1) + get_poli5_val(p5x, t); 
+%     rC(2) = rD_0(2) + get_poli6_val(p6y, t);
+      rC(1) = rC_0(1)*cos(-w*t);
+      rC(2) = rC_0(1)*sin(-w*t) + rC_0(2);
+%     rC(1) = x_pos;
+%     rC(2) = y_pos;
     
-    if norm(rD) > L1 + L3      
-        rD = (L1+L3)*(rD/norm(rD));
+    if norm(rC) > L1 + L2      
+        rC = 1*(L1+L2)*(rC/norm(rC));
     end
 
-    V = k*(rD-rC);
+    r = rC-rB;
+    r_dt = (r-r_prev)/dt;
 
-    dV = (V-prevV)/dt;
-
-    rC = rC + k*(rD-rC);
-    
-    
-    if norm(rC) > L1 + L3     
-        rC = (L1+L3)*(rC/norm(rC));
+    rB = rB + k*r;
+   
+    if norm(rB) > L1 + L2    
+        rB = 1*(L1+L2)*(rB/norm(rB));
     end
     
     
 %----------------------------Inverse Kinematics
     
-    phi2 = acos( (norm(rC)^2 - L1^2 - L3^2) / (2*L1*L3) );
-    phi3 = -atan(rC(1)/rC(2)) + atan( L3*sin(phi2)/(L1 + L3*cos(phi2)));
+    q2 = acos( (norm(rB)^2 - L1^2 - L3^2) / (2*L1*L3) );
+    q1 = -atan(rB(1)/rB(2)) + atan( L3*sin(q2)/(L1 + L3*cos(q2)));
 
 
     
 %----------------------------Forward Kinematics (Animation purposes)
     
     rA = [
-        L1*sin(phi3);
-        -L1*cos(phi3);
+        L1*sin(q1);
+        -L1*cos(q1);
     ];
         
 
-    rB = [
-         L1*sin(phi3) + L2*sin(phi3 - phi2);
-        -L1*cos(phi3) - L2*cos(phi3 - phi2);
-     ]; 
+%     rB = [
+%          L1*sin(q1) + L2*sin(q2 - q1);
+%         -L1*cos(q1) - L2*cos(q2 - q1);
+%      ]; 
 
 %----------------------------------------------------------Debug    
 %     fprintf("L2 = %f\n", norm(rA-rB));
 %---------------------------------------------------------Save Derivatives
-    prevV = V;
+    r_prev = r;
 %----------------------------Save data
     Data_T(it+1) = t;
     Data_XA(it+1) = rA(1); Data_YA(it+1) = rA(2);
     Data_XB(it+1) = rB(1); Data_YB(it+1) = rB(2);
     Data_XC(it+1) = rC(1); Data_YC(it+1) = rC(2);
-    Data_XD(it+1) = rD(1); Data_YD(it+1) = rD(2);
     
-    Data_VX(it+1) = V(1); Data_VY(it+1) = V(2);
+    Data_r(it+1) = norm(r);
+    Data_r_dt(it+1) = norm(r_dt);
     
-    Data_V(it+1) = norm(V);
-    Data_dV(it+1) = norm(dV);
-    
-    Data_phi3(it+1) = phi3;
-    Data_phi2(it+1) = phi2;
+    Data_q1(it+1) = q1;
+    Data_q2(it+1) = q2;
     
 %----------------------------Animation
     addpoints(p, 0, 0);
     addpoints(p, rA(1), rA(2));
-    addpoints(p, rC(1), rC(2));
     addpoints(p, rB(1), rB(2));
     addpoints(trajB, rB(1), rB(2));
     addpoints(trajC, rC(1), rC(2));
     addpoints(trajC_Marker, rC(1), rC(2));
-    addpoints(trajD, rD(1), rD(2));
-    addpoints(trajD_Marker, rD(1), rD(2));
-    
    
     drawnow;    % comment out to disable animation
     clearpoints(p);
+    clearpoints(trajB_Marker);
     clearpoints(trajC_Marker);
-    clearpoints(trajD_Marker);
     
 end
 %---------------------------------------------Simulation Task1 END
 toc
 
 
-fprintf("phi3 = %f, phi2 = %f\n", phi3*(180/pi), phi2*(180/pi));
+fprintf("q1 = %f, q2 = %f\n", q1*(180/pi), q2*(180/pi));
 
 
 drawPositionMap(1);
 
 ShowPlot('P');
-% ShowPlot('V');
+ShowPlot('V');
 % ShowPlot('A');
 
 ShowPlot('Q');
 ShowPlot('W');
 ShowPlot('dW');
 
-ShowPlot('F');
-ShowPlot('E');
+% ShowPlot('E');
 % ShowPlot('sigmaE');
 
 %---------------------------------------------------Function Definitions
@@ -235,7 +214,6 @@ function drawPositionMap(n)
     
     global Data_XA Data_YA
     global Data_XB Data_YB
-    global Data_XC Data_YC
     
     len = length(Data_XA);
     
@@ -248,9 +226,7 @@ function drawPositionMap(n)
     while i < len
         addpoints(pm, 0, 0);
         addpoints(pm, Data_XA(i), Data_YA(i));
-        addpoints(pm, Data_XC(i), Data_YC(i));
         addpoints(pm, Data_XB(i), Data_YB(i));
-        addpoints(pm, Data_XC(i), Data_YC(i));
         addpoints(pm, Data_XA(i), Data_YA(i));
         addpoints(pm, 0, 0);
         drawnow;
@@ -259,9 +235,7 @@ function drawPositionMap(n)
     
     addpoints(pm, 0, 0);
     addpoints(pm, Data_XA(len), Data_YA(len));
-    addpoints(pm, Data_XC(len), Data_YC(len));
     addpoints(pm, Data_XB(len), Data_YB(len));
-    addpoints(pm, Data_XC(len), Data_YC(len));
     addpoints(pm, Data_XA(len), Data_YA(len));
     addpoints(pm, 0, 0);
     drawnow;
