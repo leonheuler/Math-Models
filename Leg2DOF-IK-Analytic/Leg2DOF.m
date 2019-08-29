@@ -1,7 +1,7 @@
 %---------------------------------------------Animation setup
 fig1 = figure(1);
 clf('reset')
-fig1.Position = [1400 500 500 500];
+fig1.Position = [400 200 500 500];
 % set (gcf, 'WindowButtonMotionFcn', @mouseMove);
 
 p = animatedline();
@@ -27,16 +27,16 @@ drawGround;
 
 %---------------------------------------------Simulation config
 global Time dt
-Time = 1;
+Time = 2*6.28;
 dt = 0.001;
 
 Iterations =  (Time / dt);  
 
 %---------------------------------------------Model properities
-global L1 L2 L3
+global L1 L2
 
-L1 = 0.45;
-L2 = 0.45;
+L1 = 0.425;
+L2 = 0.47;
 
 %---------------------------------------------Variables to save simulation data
 
@@ -47,7 +47,6 @@ global Data_T
 global Data_XA Data_YA
 global Data_XB Data_YB
 global Data_XC Data_YC
-global Data_XD Data_YD
 global Data_VX Data_VY
 global Data_r Data_r_dt
 global Data_q1
@@ -58,7 +57,6 @@ Data_T = zeros(1,Iterations+1);
 Data_XA = zeros(1,Iterations+1); Data_YA = zeros(1,Iterations+1);
 Data_XB = zeros(1,Iterations+1); Data_YB = zeros(1,Iterations+1);
 Data_XC = zeros(1,Iterations+1); Data_YC = zeros(1, Iterations+1);
-Data_XD = zeros(1,Iterations+1); Data_YD = zeros(1, Iterations+1);
 Data_VX = zeros(1, Iterations+1); Data_VY = zeros(1, Iterations+1);
 Data_r = zeros(1, Iterations+1); Data_r_dt = zeros(1, Iterations+1);
 Data_q1 = zeros(1, Iterations+1);
@@ -67,8 +65,8 @@ Data_q2 = zeros(1, Iterations+1);
 
 
 %---------------------------------------------Initial conditions
-q1 = -13 * (pi / 180);        % bedro
-q2 = 5 * (pi / 180);          % koleno
+q1 = 0.001 * (pi / 180);        % bedro
+q2 = 0 * (pi / 180);          % koleno
 
 
 rA = [
@@ -116,11 +114,14 @@ for it = 0:Iterations
 %     y_pos = C(1,2);
     
     t = it*dt;
-     w = 10;
+%      w = 10;
+    radius = 0.05;
 %     rC(1) = rD_0(1) + get_poli5_val(p5x, t); 
 %     rC(2) = rD_0(2) + get_poli6_val(p6y, t);
-      rC(1) = rC_0(1)*cos(-w*t);
-      rC(2) = rC_0(1)*sin(-w*t) + rC_0(2);
+%       rC(1) = rC_0(1)*cos(-w*t);
+%       rC(2) = rC_0(1)*sin(-w*t) + rC_0(2);
+    rC(1) = radius * cos(t - pi/2);
+    rC(2) = -(L1+L2) + radius + radius * sin(t - pi/2);
 %     rC(1) = x_pos;
 %     rC(2) = y_pos;
     
@@ -140,8 +141,8 @@ for it = 0:Iterations
     
 %----------------------------Inverse Kinematics
     
-    q2 = acos( (norm(rB)^2 - L1^2 - L3^2) / (2*L1*L3) );
-    q1 = -atan(rB(1)/rB(2)) + atan( L3*sin(q2)/(L1 + L3*cos(q2)));
+    q2 = acos( (norm(rB)^2 - L1^2 - L2^2) / (2*L1*L2) );
+    q1 = -atan(rB(1)/rB(2)) + atan( L2*sin(q2)/(L1 + L2*cos(q2)));
 
 
     
@@ -182,9 +183,8 @@ for it = 0:Iterations
     addpoints(trajC, rC(1), rC(2));
     addpoints(trajC_Marker, rC(1), rC(2));
    
-    drawnow;    % comment out to disable animation
+%     drawnow;    % comment out to disable animation
     clearpoints(p);
-    clearpoints(trajB_Marker);
     clearpoints(trajC_Marker);
     
 end
