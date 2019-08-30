@@ -71,7 +71,7 @@ q2 = 0 * (pi / 180);          % koleno
 
 rA = [
     L1*sin(q1);
-    -L1*cos(q2);
+    -L1*cos(q1);
 ];
 
 rB = [

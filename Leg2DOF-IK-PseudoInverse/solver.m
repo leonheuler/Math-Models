@@ -16,8 +16,8 @@ L1 = 0.5;
 L2 = 0.5;
 
 % Initial condtitions
-phi3 = -15*pi/180;
-phi2 = 10*pi/180;
+phi3 = 0*pi/180;
+phi2 = 0*pi/180;
 
 
 rA_0 = [
@@ -26,7 +26,7 @@ rA_0 = [
      ];
 
 % Simulation props
- Time = 1;
+ Time = 2*3.14;
  dt = 0.01;
  Iterations = Time / dt;
  
@@ -39,18 +39,21 @@ for It = 0:Iterations
     t = It*dt;
     
 %  Trajectory rA
-    rA = [
-            Poli5(0, Time, rA_0(1), rA_0(1) + L, 0, 0, 0, 0, t);
-            Poli6H(0, Time, rA_0(2), rA_0(2), 0, 0, 0, 0, H, t);
-         ];
- 
+%     rA = [
+%             Poli5(0, Time, rA_0(1), rA_0(1) + L, 0, 0, 0, 0, t);
+%             Poli6H(0, Time, rA_0(2), rA_0(2), 0, 0, 0, 0, H, t);
+%          ];
+   rA = rA_0 + [0.05*sin(t); -0.05*cos(t)];
+     
 %  IK
     s = rA;
     q = [phi3; phi2];
     q = q + pinv(jac(q))*(s - f(q));
     phi3 = q(1);
     phi2 = q(2);
-
+    if (phi2 < 0)
+        phi2 = 0;
+    end
 %  Animation
 
      rC = [
