@@ -8,6 +8,9 @@ set(gca, 'YDir', 'reverse');
 set(gca, 'XDir', 'reverse');
 grid on
 
+q = zeros(14,1);
+anim(q, 0,'black');
+
 trSR = animatedline();
 trSL = animatedline();
 
@@ -24,7 +27,6 @@ trHR.LineWidth = 2;
 trB = animatedline();
 trB.LineWidth = 2;
 
-q = zeros(14,1);
 
 H = 1.70;
 L_hip = H*0.2450;
@@ -32,19 +34,20 @@ L_shin = H*0.2460;
 L_toe = 0.0577*H;
 L_pelvis = 0.6;
 
-q(1) = -5*(pi/180); q(2) = 0; q(3) = 0; q(4) = 0;
-q(5) = -5*(pi/180); q(6) = 0; q(7) = 0; q(8) = 0;
+q(1) = -5*(pi/180); q(2) = 0; q(3) = 0; q(4) = 0; % Left
+q(5) = -5*(pi/180); q(6) = 0; q(7) = 0; q(8) = 0; % Right
 
-q(9) = 0; q(10) = 0; q(11) = 0;
-q(12) = 0; q(13) = 0; q(14) = 0;
+q(9) = 0; q(10) = 0; q(11) = 0; % X Y Z
+q(12) = 0; q(13) = 0; q(14) = 0; % Rx Ry Rz
 %%
 
-Time1 = 0.2;
-Time2 = 0.4;
-Time3 = 0.4;
-Time4 = 0.4;
-Time5 = 0.2;
+Time1 = 0.3;
+Time2 = 0.7;
+Time3 = 0.8;
+Time4 = 0.7;
+Time5 = 0.3;
 
+global dt
 dt = 0.01;
 
 Count1 = floor(Time1 / dt);
@@ -141,13 +144,17 @@ for i = 0:Count1 + Count2 + Count3 + Count4 + Count5
 
  
 %   Solver config
-    fun = @(q)(norm(d-f(q)));
+    fun = @(q)(norm(d-f(q))^2);
     q0 = q;   
+
+    
+    %The maximum angular knee joint velocity is about 80?/s,
+    %whereas acceleration 140?/s2
     
     lb = [0;    %q1
           -5;
           -5;
-          -8;
+          -20;
           0;    %q5
           -5;
           -5;
@@ -179,12 +186,12 @@ for i = 0:Count1 + Count2 + Count3 + Count4 + Count5
       
     options = optimoptions('fmincon','Display','off','Algorithm', 'sqp');
 
-    q = fmincon(fun,q0,[],[],[],[],lb,ub,[],options);
+    q = fmincon(fun,q0,[],[],[],[],lb,ub,[], options);
 
 
 %   Animation
     
-    anim(q,0, 'black');
+    anim(q, 0, 'black'); 
     addpoints(trSL, s(1), s(2), s(3));
     addpoints(trSR, s(4), s(5), s(6));
     
@@ -197,9 +204,9 @@ for i = 0:Count1 + Count2 + Count3 + Count4 + Count5
     M0 = T(q(9), q(10), q(11))*Rz(q(14))*Rx(q(12))*Ry(q(13));
     
     ML1 = M0*T(-L_pelvis/2, 0, 0);
-    ML2 = ML1*T(0, L_pelvis/4, 0);;
+    ML2 = ML1*T(0, L_pelvis/4, 0);
     MR1 = M0*T(L_pelvis/2, 0, 0);
-    MR2 = MR1*T(0, L_pelvis/4, 0);;
+    MR2 = MR1*T(0, L_pelvis/4, 0);
     
     rB = M0(:,4);
     rLH2 = ML2(:,4);    
@@ -208,8 +215,9 @@ for i = 0:Count1 + Count2 + Count3 + Count4 + Count5
     addpoints(trHR, rLH2(1), rLH2(2), rLH2(3));
     addpoints(trHL, rRH2(1), rRH2(2), rRH2(3));
     addpoints(trB, rB(1), rB(2), rB(3));
-     
-    drawnow limitrate;
+    
+    
+    
 end
 %%
 

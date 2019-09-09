@@ -122,7 +122,7 @@ function Anim(q, mode, color )
     addpoints(h, rRH1(1), rRH1(2), rRH1(3));   
     addpoints(h, rB(1), rB(2), rB(3));
     
-    drawnow limitrate;
+    drawnow;
 
     if (mode == 0)
         clearpoints(h);
