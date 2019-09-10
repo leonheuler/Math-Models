@@ -41,14 +41,14 @@ for t = -pi/8:0.1:pi/8
     ML6 = ML5*Rx(q(4))*T(0,0,-L_shin);
     ML7 = ML6*T(0,L_toe,0);
     
-    rB = M0(:,4);
-    rLH1 = ML1(:,4);
-    rLH2 = ML2(:,4);
-    rLH3 = ML3(:,4);
-    rLH4 = ML4(:,4);
-    rLK = ML5(:,4);
-    rLA = ML6(:,4);
-    rLT = ML7(:,4);
+    rB = tform2trvec(M0); 
+    rLH1 =  tform2trvec(ML1);
+    rLH2 = tform2trvec(ML2);
+    rLH3 = tform2trvec(ML3);
+    rLH4 = tform2trvec(ML4);
+    rLK = tform2trvec(ML5);
+    rLA = tform2trvec(ML6);
+    rLT = tform2trvec(ML7);
     
 
     
@@ -77,13 +77,13 @@ for t = -pi/8:0.1:pi/8
     MR6 = MR5*Rx(q(8))*T(0,0,-L_shin);
     MR7 = MR6*T(0,L_toe,0);   
     
-    rRH1 = MR1(:,4);
-    rRH2 = MR2(:,4);
-    rRH3 = MR3(:,4);
-    rRH4 = MR4(:,4);
-    rRK = MR5(:,4);
-    rRA = MR6(:,4);
-    rRT = MR7(:,4);
+    rRH1 =  tform2trvec(MR1);
+    rRH2 = tform2trvec(MR2);
+    rRH3 = tform2trvec(MR3);
+    rRH4 = tform2trvec(MR4);
+    rRK = tform2trvec(MR5);
+    rRA = tform2trvec(MR6);
+    rRT = tform2trvec(MR7);
     
     addpoints(h, rB(1), rB(2), rB(3));
     addpoints(h, rRH1(1), rRH1(2), rRH1(3));
