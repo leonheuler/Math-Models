@@ -1,4 +1,5 @@
-figure(1);
+fig1 = figure(1);
+fig1.Position = [200 200 500 500];
 clf('reset');
 
 h = animatedline();
@@ -11,7 +12,8 @@ tr = animatedline();
 tr.Color = 'red';
 
 
-figure(2);
+fig2 = figure(2);
+fig2.Position = [750 200 500 500];
 clf('reset');
 subplot(3,1,1);
 q1_graph = animatedline();
@@ -32,7 +34,8 @@ e2_graph = animatedline('Color','red');
 grid on;
 legend('e1','e2');  ylabel('deg/s^2'); title('Joint Accelerations');
 
-figure(3);
+fig3 = figure(3);
+fig3.Position = [1300 200 500 500];
 clf('reset');
 subplot(2,1,1);
 tau1_graph = animatedline();
@@ -46,14 +49,14 @@ grid on; ylabel('H*m'); title('Torque 2');
 L1 = 0.5;   m1 = 2;
 L2 = 0.5;   m2 = 2;
 
-g = -9.81; dt = 0.01;
+g = 9.81; dt = 0.01;
 %% Trajectory 
 
-q1_0 = -100*(pi/180);    w1_0 = 0;
-q1_1 = -74*(pi/180);   w1_1 = 0;
+q1_0 = 0*(pi/180);    w1_0 = 0;
+q1_1 = 0*(pi/180);   w1_1 = 0;
 
 q2_0 = 0;              w2_0 = 0;
-q2_1 = -15*(pi/180);    w2_1 = 0;
+q2_1 = 0*(pi/180);    w2_1 = 0;
 
 t0 = 0;
 t1 = 0.6;
