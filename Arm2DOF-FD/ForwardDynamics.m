@@ -46,7 +46,7 @@ grid on; ylabel('H*m'); title('Torque 2');
 L1 = 0.5;   m1 = 2;
 L2 = 0.5;   m2 = 2;
 
-g = 9.81; dt = 0.01;
+g = -9.81; dt = 0.01;
 %% Trajectory 
 
 q1_0 = -100*(pi/180);    w1_0 = 0;
@@ -108,7 +108,7 @@ for t = t0:dt:t1
     addpoints(tr, r2(1), r2(2), r2(3));
        
     
-    drawnow limitrate;
+    drawnow %limitrate;
     clearpoints(h);
     
     addpoints(q1_graph, t, q1*(180/pi));
