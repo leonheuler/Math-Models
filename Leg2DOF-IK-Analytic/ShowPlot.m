@@ -2,33 +2,33 @@ function  ShowPlot(command)
     
     global dt
     global Data_T 
-    global Data_XB Data_YB
-    global Data_XC Data_YC
+    global Data_XK Data_YK
+    global Data_XA Data_YA
     global Data_r Data_r_dt
     global Data_q1
     global Data_q2
 
     
     %% V_A/B
-    dData_XB = diff(Data_XB) / dt;
-    dData_YB = diff(Data_YB) / dt;
+    dData_XK = diff(Data_XK) / dt;
+    dData_YK = diff(Data_YK) / dt;
 
-    dData_XC = diff(Data_XC) / dt;
-    dData_YC = diff(Data_YC) / dt;
+    dData_XA = diff(Data_XA) / dt;
+    dData_YA = diff(Data_YA) / dt;
 
-    dData_B = (dData_XB.^2 + dData_YB.^2).^(1/2);
-    dData_C = (dData_XC.^2 + dData_YC.^2).^(1/2);
+    dData_B = (dData_XK.^2 + dData_YK.^2).^(1/2);
+    dData_C = (dData_XA.^2 + dData_YA.^2).^(1/2);
     %% A
-    ddData_XB = diff(dData_XB)/dt;
-    ddData_YB = diff(dData_YB)/dt;
-    ddData_XC = diff(dData_XC)/dt;
-    ddData_YC = diff(dData_YC)/dt;
-    ddData_B = (ddData_XB.^2 + ddData_YB.^2).^(1/2);
-    ddData_C = (ddData_XC.^2 + ddData_YC.^2).^(1/2);
+    ddData_XK = diff(dData_XK)/dt;
+    ddData_YK = diff(dData_YK)/dt;
+    ddData_XA = diff(dData_XA)/dt;
+    ddData_YA = diff(dData_YA)/dt;
+    ddData_B = (ddData_XK.^2 + ddData_YK.^2).^(1/2);
+    ddData_C = (ddData_XA.^2 + ddData_YA.^2).^(1/2);
     
     %% Err
-    Data_ErrX = Data_XC - Data_XB;
-    Data_ErrY = Data_YC - Data_YB;
+    Data_ErrX = Data_XA - Data_XK;
+    Data_ErrY = Data_YA - Data_YK;
     Data_Err = (Data_ErrX.^2 + Data_ErrY.^2).^(1/2); 
     %% sigmaErr
     dErrX = (1./Data_T).*(cumtrapz(Data_T, Data_ErrX.^2));
@@ -54,9 +54,9 @@ function  ShowPlot(command)
 
             % x(t)
             subplot(3,1,1);
-            plot(Data_T, Data_XB);
+            plot(Data_T, Data_XK);
             hold on;
-            plot(Data_T, Data_XC);
+            plot(Data_T, Data_XA);
             legend('X_B(t)','X_C(t)');
             grid on;
             xlabel('t, sec'); ylabel('X_B/X_C, m');
@@ -64,18 +64,18 @@ function  ShowPlot(command)
 
             % y(t)
             subplot(3,1,2);
-            plot(Data_T, Data_YB);
+            plot(Data_T, Data_YK);
             hold on;
-            plot(Data_T, Data_YC);
+            plot(Data_T, Data_YA);
             legend('Y_B(t)','Y_C(t)');
             grid on;
             xlabel('t, sec'); ylabel('Y_B/Y_C, m');
 
             % y(x)
             subplot(3,1,3);
-            plot(Data_XB, Data_YB);
+            plot(Data_XK, Data_YK);
             hold on;
-            plot(Data_XC, Data_YC);
+            plot(Data_XA, Data_YA);
             legend('Y_B(X_B)', 'Y_C(X_C)');
             grid on;
             xlabel('X_B/X_C, m'); ylabel('Y_B/Y_C, m');
@@ -90,9 +90,9 @@ function  ShowPlot(command)
 
             % v_x(t)
             subplot(3,1,1);
-            plot(Data_T(:,1:length(dData_XB)), dData_XB);
+            plot(Data_T(:,1:length(dData_XK)), dData_XK);
             hold on;
-            plot(Data_T(:,1:length(dData_XC)), dData_XC);
+            plot(Data_T(:,1:length(dData_XA)), dData_XA);
             legend('V_X_B(t)', 'V_X_C(t)');
             ylabel('V_X_B/V_X_C, m/s'); xlabel('t, sec');
             grid on;
@@ -100,9 +100,9 @@ function  ShowPlot(command)
 
             % v_y(t)
             subplot(3,1,2);
-            plot(Data_T(:,1:length(dData_YB)), dData_YB);
+            plot(Data_T(:,1:length(dData_YK)), dData_YK);
             hold on;
-            plot(Data_T(:,1:length(dData_YC)), dData_YC);
+            plot(Data_T(:,1:length(dData_YA)), dData_YA);
             legend('V_Y_B(t)', 'V_Y_C(t)');
             ylabel('V_Y_B/V_Y_C, m/s'); xlabel('t, sec');
             grid on;
@@ -125,9 +125,9 @@ function  ShowPlot(command)
 
             % a_x(t)
             subplot(3,1,1);
-            plot(Data_T(:,1:length(ddData_XB)), ddData_XB);
+            plot(Data_T(:,1:length(ddData_XK)), ddData_XK);
             hold on;
-            plot(Data_T(:,1:length(ddData_XC)), ddData_XC);
+            plot(Data_T(:,1:length(ddData_XA)), ddData_XA);
             legend('a_X_A(t)', 'a_X_B(t)');
             ylabel('a_X_A/a_X_B, m/s^2'); xlabel('t, sec');
             grid on;
@@ -135,9 +135,9 @@ function  ShowPlot(command)
 
             % a_y(t)
             subplot(3,1,2);
-            plot(Data_T(:,1:length(ddData_YB)), ddData_YB);
+            plot(Data_T(:,1:length(ddData_YK)), ddData_YK);
             hold on;
-            plot(Data_T(:,1:length(ddData_YC)), ddData_YC);
+            plot(Data_T(:,1:length(ddData_YA)), ddData_YA);
             legend('a_Y_A(t)', 'a_Y_B(t)');
             ylabel('a_Y_A/a_Y_B, m/s^2'); xlabel('t, sec');
             grid on;
