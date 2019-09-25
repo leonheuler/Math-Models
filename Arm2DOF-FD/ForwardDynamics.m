@@ -67,7 +67,7 @@ t1 = 0;
 while 1
     
 
-    task = input('Specify task..');
+    task = input('Specify task.. (3x3)');
     
     if (task == 0)
         break;
