@@ -66,6 +66,17 @@ L1 = 1.0;   m1 = 1;
 L2 = 1.0;   m2 = 1;
 
 g = 9.81; dt = 0.01; t0 = 0;
+
+k1 = 10;
+k2 = 10; 
+
+Kp = [k1^2 0;
+      0  k2^2];
+
+Kv = [2*k1 0;
+      0 2*k2];
+ 
+
   
 Fv1 = 0.0;
 Fv2 = 0.0;
@@ -90,7 +101,7 @@ tau = [0; 0];
 while 1
     
 
-    fprintf("1 - Move\n2 - Clear\n3 - Plots\n4 - Gains\n5 - Exit\n6 - Restart\n");
+    fprintf("1 - Move\n2 - Clear\n3 - Plots\n4 - Gains\n5 - Exit\n");
     cmd = input('Specify command..');
     
     switch cmd
@@ -123,9 +134,7 @@ while 1
              continue;
         case 5
             break;  
-        case 6
-            CTC_Poli5;
-            break;
+
     end
     
 
@@ -151,12 +160,14 @@ while 1
             
         q_dot_dot_d = [ 2*a3 + 6*(t-t0)*a4 + 12*(t-t0)^2*a5 + 20*(t-t0)^3*a6;
                         2*b3 + 6*(t-t0)*b4 + 12*(t-t0)^2*b5 + 20*(t-t0)^3*b6];
-            
-        %% Error   
-        e = q_d - q;
+                    
+        %% Errors     
+        e = q_d - q;      
+%         e_dot = (e - e_prev)/dt;
+        e_dot = q_dot_d - q_dot;
         
-        %% Feedforward control
-        tau = M(q_d)*(q_dot_dot_d) + N(q_d, q_dot_d);
+        %% PD controller
+        tau = M(q)*(q_dot_dot_d + Kp*e + Kv*e_dot) + N(q, q_dot);
         
 
         %% Plant
@@ -172,7 +183,7 @@ while 1
         r2 = [ L1*cos(q(1)) + L2*cos(q(1) + q(2));
                L1*sin(q(1)) + L2*sin(q(1) + q(2))];
     
-        
+        e_prev = e;
         %% Animation
 
         addpoints(h, 0, 0, 0);
