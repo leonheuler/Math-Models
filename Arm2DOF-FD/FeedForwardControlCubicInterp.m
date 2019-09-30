@@ -72,7 +72,6 @@ q = [0; 0];
 q_dot = [0; 0];      
 q_dot_dot = [0; 0]; 
 
-%% Desired
 q_d = [0; 0];
 q_dot_d = [0; 0];
 q_dot_dot_d = [0; 0];      
@@ -133,7 +132,8 @@ while 1
 
     [a1, b1, c1, d1] = CIP(q(1), q_d(1), q_dot(1), 0, T);
     [a2, b2, c2, d2] = CIP(q(2), q_d(2), q_dot(2), 0, T);
-   
+    
+
     
     t1 = t0 + T;
      
@@ -156,18 +156,13 @@ while 1
             
         q_dot_dot_d = [2*c1 + 6*(t-t0)*d1;
                        2*c2 + 6*(t-t0)*d2];
-                  
-        
-        %% Computed Torque Control
+            
+            
         e = q_d - q;
-        e_dot = q_dot_d - q_dot;
-        tau = M(q)*(q_dot_dot_d + Kp*e + Kv*e_dot) + N(q,q_dot);
-        
-
         %% Feedforward control
         tau = M(q)*q_dot_dot_d + N(q_d, q_dot_d);
            
-        %% Plant feedback
+        %% Plant
         q_dot_dot =  inv(M(q))*(tau - N(q,q_dot));
         q_dot = q_dot + q_dot_dot.*dt;
         q = q + q_dot.*dt + q_dot_dot.*(dt^2/2);
@@ -278,7 +273,7 @@ end
 % end            
             
             
- function [a,  b,  c,  d, e, f] = Poli5( q_0, q_1, w_0, w_1, e_0, e_1, T)
+ function [a,  b,  c,  d, e, f]= Poli5( q_0, q_1, w_0, w_1, e_0, e_1, T)
 
     a = q_0; b = w_0; c = e_0/2;
     d = -(20*(q_0) - 20*(q_1) + 12*T*(w_0) + 8*T*(w_1) + 3*T^2*(e_0) - T^2*(e_1))/(2*T^3);
