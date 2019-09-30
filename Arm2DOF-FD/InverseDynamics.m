@@ -11,7 +11,6 @@ grid on;
 tr = animatedline();
 tr.Color = 'red';
 
-
 fig2 = figure(2);
 fig2.Position = [750 200 500 500];
 clf('reset');
@@ -50,131 +49,154 @@ global m1 m2 L1 L2 g
 L1 = 0.5;   m1 = 1;
 L2 = 0.5;   m2 = 1;
 
-g = 9.81; dt = 0.01;
+g = 9.81; dt = 0.01; t0 = 0;
+%% Trajectory 
 
-I1 = m1*L1^2;
-I2 = m2*L2^2;
 
 while 1
     
 
-    task = input('Specify task.. [q1_0, q2_0, q1_dot_0, q2_dot_0 tau1, tau2, T]: ');
+    fprintf("1 - Move\n2 - Clear\n3 - Plots\n4 - Exit\n");
+    cmd = input('Specify command..');
     
-    if (task == 'q')
-        fprintf("Quitting..");
-        break;
+    switch cmd
+        case 1
+            task = input('Specify initial conditions.. [q1, q2, q1dot, q2dot, tau1, tau2, T]: ');
+        case 2
+            clearpoints(tr);
+            clearpoints(q1_graph);
+            clearpoints(q2_graph);
+            clearpoints(w1_graph);
+            clearpoints(w2_graph);
+            clearpoints(e1_graph);
+            clearpoints(e2_graph);
+            clearpoints(tau1_graph);
+            clearpoints(tau2_graph);
+            t0 = 0;
+            continue;
+        case 3 
+            [Data_t, Data_q1] = getpoints(q1_graph); figure; plot(Data_t, Data_q1);
+            [Data_t, Data_q2] = getpoints(q2_graph); hold on; plot(Data_t, Data_q2);
+            continue;
+        case 4
+            break;  
     end
     
-    q  = [task(1);
-        task(2)];
     
-    q1 = q(1);
-    q2 = q(2);
+    q = [ task(1);
+          task(2)];
     
-    q_dot = [task(3);
-             task(4)];
-    q1_dot = q_dot(1);
-    q2_dot = q_dot(2);
-         
-    tau = [task(5);
-           task(6)];
-       
-    T = task(7);    
-       
-    for t = 0:dt:T
+    q_dot = [ task(3);
+              task(4)];
+    
+    tau = [ task(5);
+            task(6)];
+    
+    T = task(7);
+
+    t1 = t0 + T;
+    
+    for t = t0:dt:t1
+
         
-        t1 = M(q2);
-        t2 = inv(M(q2))*tau;
-        t3 = V(q2, q1_dot, q2_dot);
-        t4 = G(q1,q2);
-        t5 = inv(M(q2))*V(q2, q1_dot, q2_dot) + G(q1,q2);
+        if (t >= T/5)
+            tau = [0; 0];
+        end  
         
+        q_dot_dot = inv(M(q))*(tau - V(q,q_dot) - G(q));
         
-        q_dot_dot = inv(M(q2))*tau - inv(M(q2))*(V(q2, q1_dot, q2_dot) + G(q1,q2));
+%         taum = M(q)*q_dot_dot + V(q,q_dot) + G(q);
         
         q_dot = q_dot + q_dot_dot.*dt;
+        
         q = q + q_dot.*dt + q_dot_dot.*(dt^2/2);
-        
-        q1 = q(1); q2 = q(2);
-        w1 = q_dot(1); w2 = q_dot(2);    
-        e1 = q_dot_dot(1); e2 = q_dot_dot(2);
-        tau1 = I1*e1;
-        tau2=  I2*e2;
-        
+            
+   
+
         %% Forward Kinematics
-        A1 = [
-                cos(q1)  -sin(q1)  0   L1*cos(q1);
-                sin(q1)  cos(q1)   0   L1*sin(q1);
-                0       0          1   0;
-                0       0          0   1];
 
-
-        A2 = [
-                cos(q2)  -sin(q2)  0   L2*cos(q2);
-                sin(q2)  cos(q2)   0   L2*sin(q2);
-                0       0          1   0;
-                0       0          0   1
-                ];
-
-        T1 = A1;
-        T2 = A1*A2;
-
-        r1 = tform2trvec(T1);
-        r2 = tform2trvec(T2);
+        r1 = [ L1*cos(q(1));
+               L1*sin(q(1))];
+        r2 = [ L1*cos(q(1)) + L2*cos(q(1) + q(2));
+               L1*sin(q(1)) + L2*sin(q(1) + q(2))];
+    
 
         %% Animation
 
         addpoints(h, 0, 0, 0);
-        addpoints(h, r1(1), r1(2), r1(3));
-        addpoints(h, r2(1), r2(2), r2(3));
-        addpoints(tr, r2(1), r2(2), r2(3));
-
-
+        addpoints(h, r1(1), r1(2));
+        addpoints(h, r2(1), r2(2));
+        addpoints(tr, r2(1), r2(2));
+        
         drawnow %limitrate;
         clearpoints(h);
-
-        addpoints(q1_graph, t, q1*(180/pi));
-        addpoints(q2_graph, t, q2*(180/pi));
-        addpoints(w1_graph, t, w1*(180/pi));
-        addpoints(w2_graph, t, w2*(180/pi));
-        addpoints(e1_graph, t, e1*(180/pi));
-        addpoints(e2_graph, t, e2*(180/pi));
-        addpoints(tau1_graph, t, tau1);
-        addpoints(tau2_graph, t, tau2);
-
+       
+        addpoints(q1_graph, t, q(1)*(180/pi) + 90);
+        addpoints(q2_graph, t, q(2)*(180/pi));
+        addpoints(w1_graph, t, q_dot(1)*(180/pi));
+        addpoints(w2_graph, t, q_dot(2)*(180/pi));
+        addpoints(e1_graph, t, q_dot_dot(1)*(180/pi));
+        addpoints(e2_graph, t, q_dot_dot(2)*(180/pi));
+        addpoints(tau1_graph, t, tau(1));
+        addpoints(tau2_graph, t, tau(2));
 
     end
-
+    
     addpoints(h, 0, 0, 0);
-    addpoints(h, r1(1), r1(2), r1(3));
-    addpoints(h, r2(1), r2(2), r2(3));
+    addpoints(h, r1(1), r1(2));
+    addpoints(h, r2(1), r2(2));
 
     drawnow;
     
+    t0 = t1;
+
 end
 
-function ret = M(q2)
-    
+
+
+function ret = M(q)
+
     global m1 m2 L1 L2
-    ret = [ (m1+m2)*L1^2 + m2*L2^2 + 2*m2*L1*L2*cos(q2),    m2*L2^2 + m2*L1*L2*cos(q2);
-            m2*L2^2 + m2*L1*L2*cos(q2),                     m2*L2^2];
+    
+    ret = [ (m1+m2)*L1^2 + m2*L2^2 + 2*m2*L1*L2*cos(q(2)),      m2*L2^2+m2*L1*L2*cos(q(2));
+            m2*L2^2+m2*L1*L2*cos(q(2)),                         m2*L2^2];
+    
+end
+
+function ret = V(q, q_dot)
+    
+    global m1 m2 L1 L2 
+    ret = [ -m2*L1*L2*(2*q_dot(1)*q_dot(2)+(q_dot(2)^2))*sin(q(2));
+            m2*L1*L2*(q_dot(1)^2)*sin(q(2))];
         
 end
 
-function ret = V(q2, q1_dot, q2_dot)
+function ret = G(q)
     
-    global m2 L1 L2
-    ret = [-m2*L1*L2*(2*q1_dot*q2_dot + q2_dot^2)*sin(q2);
-            m2*L1*L2*(q1_dot^2)*sin(q2)];
-
-end
-
-function ret = G(q1, q2)
-
     global m1 m2 L1 L2 g
-    ret = [(m1+m2)*g*L1*cos(q1) + m2*g*L2*cos(q1+q2);
-            m2*g*L2*cos(q1+q2)];     
+    ret = [(m1+m2)*g*L1*cos(q(1)) + m2*g*L2*cos(q(1)+q(2));
+            m2*g*L2*cos(q(1)+q(2))];
+
 end
 
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
 
-
+    
+    
+    
+    
+    
+    
+    
