@@ -45,6 +45,7 @@ tau2_graph = animatedline();
 grid on; ylabel('H*m'); title('Torque 2');
 
 %% Model Parameters
+global m1 m2 L1 L2 g
 
 L1 = 0.5;   m1 = 1;
 L2 = 0.5;   m2 = 1;
@@ -79,8 +80,10 @@ while 1
             t0 = 0;
             continue;
         case 3 
-            [Data_t, Data_q1] = getpoints(q1_graph);
-            [Data_t, Data_q2] = getpoints(q2_graph);
+            [Data_t, Data_q1] = getpoints(q1_graph); figure; plot(Data_t, Data_q1);
+            [Data_t, Data_q2] = getpoints(q2_graph); hold on; plot(Data_t, Data_q2);
+            [Data_t, Data_q1_d] = getpoints(q1_d_graph);  plot(Data_t, Data_q1_d,'--');
+            [Data_t, Data_q2_d] = getpoints(q2_d_graph);  plot(Data_t, Data_q2_d,'--');
         case 4
             break;  
     end
@@ -102,25 +105,23 @@ while 1
         
 
         q = [a1 + (t-t0)*a2 + (t-t0)^2*a3 + (t-t0)^3*a4 + (t-t0)^4*a5 + (t-t0)^5*a6;
-                b1 + (t-t0)*b2 + (t-t0)^2*b3 + (t-t0)^3*b4 + (t-t0)^4*5 + (t-t0)^5*a6];
+                b1 + (t-t0)*b2 + (t-t0)^2*b3 + (t-t0)^3*b4 + (t-t0)^4*b5 + (t-t0)^5*b6];
         
         q_dot = [ a2 + 2*(t-t0)*a3 + 3*(t-t0)^2*a4 + 4*(t-t0)^3*a5 + 5*(t-t0)^4*a6;
-                    b2 + 2*(t-t0)*b3 + 3*(t-t0)^2*b4 + 4*(t-t0)^3*5 + 5*(t-t0)^4*a6];
+                    b2 + 2*(t-t0)*b3 + 3*(t-t0)^2*b4 + 4*(t-t0)^3*b5 + 5*(t-t0)^4*b6];
             
         q_dot_dot = [ 2*a3 + 6*(t-t0)*a4 + 12*(t-t0)^2*a5 + 20*(t-t0)^3*a6;
-                        2*b3 + 6*(t-t0)*b4 + 12*(t-t0)^2*a5 + 20*(t-t0)^3*a6];
+                        2*b3 + 6*(t-t0)*b4 + 12*(t-t0)^2*b5 + 20*(t-t0)^3*b6];
+            
         
         tau = M(q)*q_dot_dot + N(q, q_dot);
         
-%         tau1 = ((m1+m2)*L1^2 + m2*L2^2 + 2*m2*L1*L2*cos(q2))*e1 + (m2*L2^2+m2*L1*L2*cos(q2))*e2 - m2*L1*L2*(2*w1*w2 + w2^2)*sin(q2) + (m1+m2)*g*L1*cos(q1) + m2*g*L2*cos(q1+q2);
-%         tau2 = (m2*L2^2 + m2*L1*L2*cos(q2))*e1 + m2*L2^2*e2 + m2*L1*L2*w1^2*sin(q2) + m2*g*L2*cos(q1+q2);
-
-
+        
         %% Forward Kinematics
-        r1 = [ L1*cos(q1);
-               L1*sin(q1)];
-        r2 = [ L1*cos(q1) + L2*cos(q1 + q2);
-               L1*sin(q1) + L2*sin(q1 + q2)];
+        r1 = [ L1*cos(q(1));
+               L1*sin(q(1))];
+        r2 = [ L1*cos(q(1)) + L2*cos(q(1) + q(2));
+               L1*sin(q(1)) + L2*sin(q(1) + q(2))];
 
 
         %% Animation
@@ -134,14 +135,14 @@ while 1
         drawnow %limitrate;
         clearpoints(h);
 
-        addpoints(q1_graph, t, q1*(180/pi));
-        addpoints(q2_graph, t, q2*(180/pi));
-        addpoints(w1_graph, t, w1*(180/pi));
-        addpoints(w2_graph, t, w2*(180/pi));
-        addpoints(e1_graph, t, e1*(180/pi));
-        addpoints(e2_graph, t, e2*(180/pi));
-        addpoints(tau1_graph, t, tau1);
-        addpoints(tau2_graph, t, tau2);
+        addpoints(q1_graph, t, q(1));
+        addpoints(q2_graph, t, q(2));
+        addpoints(w1_graph, t, q_dot(1));
+        addpoints(w2_graph, t, q_dot(2));
+        addpoints(e1_graph, t, q_dot_dot(1));
+        addpoints(e2_graph, t, q_dot_dot(2));
+        addpoints(tau1_graph, t, tau(1));
+        addpoints(tau2_graph, t, tau(2));
 
 
     end
@@ -171,8 +172,6 @@ function [a,  b,  c,  d] = CIP(q_0,q_1, w_0, w_1, T)
     b = w_0;
     c = ( 3*(q_1-q_0)- T*(2*w_0+w_1) ) / T^2;
     d = ( 2*(q_0-q_1) - T*(w_0+w_1) )/ T^3; 
-
-
 
 end
 

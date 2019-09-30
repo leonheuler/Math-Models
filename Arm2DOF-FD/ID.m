@@ -46,8 +46,8 @@ grid on; ylabel('H*m'); title('Torque 2');
 %% Model Parameters
 global m1 m2 L1 L2 g
 
-L1 = 0.5;   m1 = 1;
-L2 = 0.5;   m2 = 1;
+L1 = 1;   m1 = 1;
+L2 = 1;   m2 = 1;
 
 g = 9.81; dt = 0.01; t0 = 0;
 %% Trajectory 
@@ -99,19 +99,16 @@ while 1
     for t = t0:dt:t1
 
         
-        if (t >= T/5)
+        if (t >= t0 + 1)
             tau = [0; 0];
         end  
         
         q_dot_dot = inv(M(q))*(tau - V(q,q_dot) - G(q));
         
-%         taum = M(q)*q_dot_dot + V(q,q_dot) + G(q);
-        
         q_dot = q_dot + q_dot_dot.*dt;
         
         q = q + q_dot.*dt + q_dot_dot.*(dt^2/2);
             
-   
 
         %% Forward Kinematics
 

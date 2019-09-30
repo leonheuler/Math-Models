@@ -18,7 +18,7 @@ subplot(3,1,1);
 q1_graph = animatedline();
 q2_graph = animatedline('Color','red');
 
-q1_d_graph = animatedline('LineStyle','--');
+q1_d_graph = animatedline('LineWidth',1.5,'LineStyle','--');
 q2_d_graph = animatedline('Color','red','LineStyle','--');
 
 grid on;
@@ -60,13 +60,28 @@ grid on; ylabel('Deg'); title('Err 2');
 
 
 %% Model Parameters
-global m1 m2 L1 L2 g
+global m1 m2 L1 L2 g Fv Kp Kv
 
 L1 = 1.0;   m1 = 1;
 L2 = 1.0;   m2 = 1;
 
 g = 9.81; dt = 0.01; t0 = 0;
-%% Trajectory 
+
+k1 = 2;
+k2 = 2; 
+
+Kp = [k1^2 0;
+      0  k2^2];
+
+Kv = [2*k1 0;
+      0 2*k2];
+  
+Fv1 = 0.0;
+Fv2 = 0.0;
+
+Fv  = [Fv1 0;
+       0   Fv2];
+%% Variables 
 
 q = [0; 0];
 q_dot = [0; 0];      
@@ -78,12 +93,8 @@ q_dot_dot_d = [0; 0];
 
 e = [0; 0];
 e_dot = [0; 0];
-
-k1 = 5;
-k2 = 5;      
-
-tau = [0; 
-       0];
+e_prev = [0; 0];
+tau = [0; 0];
 
 while 1
     
@@ -116,8 +127,8 @@ while 1
         case 4 
              fprintf('Current gains are [%.2f, %.2f]\n', k1, k2);
              gains = input('Specify gains.. [w1, w2]: ');
-             kp1 = gains(1);
-             kp2 = gains(2);
+             k1 = gains(1);
+             k2 = gains(2);
              continue;
         case 5
             break;  
@@ -130,40 +141,35 @@ while 1
     
     T = task(3);
 
+%     [a1, a2, a3, a4, a5, a6] = Poli5(q(1), q_d(1), q_dot(1), 0, q_dot_dot(1), 0, T);
+%     [b1, b2, b3, b4, b5, b6] = Poli5(q(2), q_d(2), q_dot(2), 0, q_dot_dot(2), 0, T);
+    
 
-    
-    [a1, a2, a3, a4, a5, a6] = Poli5(q(1), q_d(1), 0, 0, 0, 0, T);
-    [b1, b2, b3, b4, b5, b6] = Poli5(q(2), q_d(2), 0, 0, 0, 0, T);
-    
     t1 = t0 + T;
-     
-    Kp = [k1^2 0;
-          0  k2^2];
-    
-    Kv = [2*k1 0;
-          0 2*k2];
-
-    
     for t = t0:dt:t1
-    
-
-        % Poli5 interpolation
-        q_d = [a1 + (t-t0)*a2 + (t-t0)^2*a3 + (t-t0)^3*a4 + (t-t0)^4*a5 + (t-t0)^5*a6;
-                b1 + (t-t0)*b2 + (t-t0)^2*b3 + (t-t0)^3*b4 + (t-t0)^4*5 + (t-t0)^5*a6];
         
-        q_dot_d = [ a2 + 2*(t-t0)*a3 + 3*(t-t0)^2*a4 + 4*(t-t0)^3*a5 + 5*(t-t0)^4*a6;
-                    b2 + 2*(t-t0)*b3 + 3*(t-t0)^2*b4 + 4*(t-t0)^3*5 + 5*(t-t0)^4*a6];
+        %% Poli5 interpolation
+%         q_d = [a1 + (t-t0)*a2 + (t-t0)^2*a3 + (t-t0)^3*a4 + (t-t0)^4*a5 + (t-t0)^5*a6;
+%                 b1 + (t-t0)*b2 + (t-t0)^2*b3 + (t-t0)^3*b4 + (t-t0)^4*b5 + (t-t0)^5*b6];
+        
+%         q_dot_d = [ a2 + 2*(t-t0)*a3 + 3*(t-t0)^2*a4 + 4*(t-t0)^3*a5 + 5*(t-t0)^4*a6;
+%                     b2 + 2*(t-t0)*b3 + 3*(t-t0)^2*b4 + 4*(t-t0)^3*b5 + 5*(t-t0)^4*b6];
             
-        q_dot_dot_d = [ 2*a3 + 6*(t-t0)*a4 + 12*(t-t0)^2*a5 + 20*(t-t0)^3*a6;
-                        2*b3 + 6*(t-t0)*b4 + 12*(t-t0)^2*a5 + 20*(t-t0)^3*a6];
+%         q_dot_dot_d = [ 2*a3 + 6*(t-t0)*a4 + 12*(t-t0)^2*a5 + 20*(t-t0)^3*a6;
+%                         2*b3 + 6*(t-t0)*b4 + 12*(t-t0)^2*b5 + 20*(t-t0)^3*b6];
             
-            
-
+        %% Errors     
+        e = q_d - q;
+        e_dot = (e - e_prev)/dt;
+        
+%         e_dot = q_dot_d - q_dot;
+        
         %% Feedforward control
-        tau = M(q)*q_dot_dot_d + N(q_d, q_dot_d);
-           
+        tau = M(q)*(q_dot_dot_d + Kp*e + Kv*e_dot) + N(q, q_dot);
+        
+
         %% Plant
-        q_dot_dot =  inv(M(q))*(tau - N(q,q_dot));
+        q_dot_dot = inv(M(q))*(tau - N(q,q_dot));
         q_dot = q_dot + q_dot_dot.*dt;
         q = q + q_dot.*dt + q_dot_dot.*(dt^2/2);
             
@@ -175,7 +181,7 @@ while 1
         r2 = [ L1*cos(q(1)) + L2*cos(q(1) + q(2));
                L1*sin(q(1)) + L2*sin(q(1) + q(2))];
     
-
+        e_prev = e;
         %% Animation
 
         addpoints(h, 0, 0, 0);
@@ -240,11 +246,7 @@ end
 
 function ret = F(q_dot)
     
-    Fv1 = 0.8;
-    Fv2 = 0.4;
-
-    Fv  = [Fv1 0;
-           0   Fv2];
+    global Fv
 
     ret = Fv*q_dot;
         
@@ -259,41 +261,12 @@ end
             
             
             
-% function [a,  b,  c,  d] = CIP(q_0,q_1, w_0, w_1, T)
-% %CUBIC_INTERPOLATING_POLYNOMIAL 
-% %   Returns coefficients of cubic polynomial
-% 
-% 
-%     a = q_0;
-%     b = w_0;
-%     c = ( 3*(q_1-q_0)- T*(2*w_0+w_1) ) / T^2;
-%     d = ( 2*(q_0-q_1) - T*(w_0+w_1) )/ T^3; 
-% 
-% 
-% end            
-            
-            
- function [a,  b,  c,  d, e, f]= Poli5( q_0, q_1, w_0, w_1, e_0, e_1, T)
+function [a,  b,  c,  d, e, f] = Poli5( q_0, q_1, w_0, w_1, e_0, e_1, T)
 
     a = q_0; b = w_0; c = e_0/2;
     d = -(20*(q_0) - 20*(q_1) + 12*T*(w_0) + 8*T*(w_1) + 3*T^2*(e_0) - T^2*(e_1))/(2*T^3);
     e = (30*(q_0) - 30*(q_1) + 16*T*(w_0) + 14*T*(w_1) + 3*T^2*(e_0) - 2*T^2*(e_1))/(2*T^4);
     f = -(12*(q_0) - 12*(q_1) + 6*T*(w_0) + 6*T*(w_1) + T^2*(e_0) - T^2*(e_1))/(2*T^5);
- end           
-
-%         q_d = [a1 + (t-t0)*a2 + (t-t0)^2*a3 + (t-t0)^3*a4 + (t-t0)^4*a5 + (t-t0)^5*a6;
-%                b1 + (t-t0)*b2 + (t-t0)^2*b3 + (t-t0)^3*b4 + (t-t0)^4*b5 + (t-t0)^5*b6];
-
-function [a,  b,  c,  d] = CIP(q_0,q_1, w_0, w_1, T)
-%CUBIC_INTERPOLATING_POLYNOMIAL 
-%   Returns coefficients of cubic polynomial
-
-
-    a = q_0;
-    b = w_0;
-    c = -(3*(q_0-q_1) + T*(2*w_0+w_1)) / T^2;
-    d = ( 2*(q_0-q_1) + T*(w_0+w_1) )/ T^3; 
-
 
 end               
             
