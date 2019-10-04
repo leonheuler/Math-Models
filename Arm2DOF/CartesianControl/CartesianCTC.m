@@ -161,11 +161,11 @@ while 1
         rA_d = [a1 + (t-t0)*a2 + (t-t0)^2*a3 + (t-t0)^3*a4 + (t-t0)^4*a5 + (t-t0)^5*a6;
                 b1 + (t-t0)*b2 + (t-t0)^2*b3 + (t-t0)^3*b4 + (t-t0)^4*b5 + (t-t0)^5*b6];
         
-        rA_dot_d = [ a2 + 2*(t-t0)*a3 + 3*(t-t0)^2*a4 + 4*(t-t0)^3*a5 + 5*(t-t0)^4*a6;
-                    b2 + 2*(t-t0)*b3 + 3*(t-t0)^2*b4 + 4*(t-t0)^3*b5 + 5*(t-t0)^4*b6];
-            
-        rA_dot_dot_d = [ 2*a3 + 6*(t-t0)*a4 + 12*(t-t0)^2*a5 + 20*(t-t0)^3*a6;
-                        2*b3 + 6*(t-t0)*b4 + 12*(t-t0)^2*b5 + 20*(t-t0)^3*b6];
+%         rA_dot_d = [ a2 + 2*(t-t0)*a3 + 3*(t-t0)^2*a4 + 4*(t-t0)^3*a5 + 5*(t-t0)^4*a6;
+%                     b2 + 2*(t-t0)*b3 + 3*(t-t0)^2*b4 + 4*(t-t0)^3*b5 + 5*(t-t0)^4*b6];
+%             
+%         rA_dot_dot_d = [ 2*a3 + 6*(t-t0)*a4 + 12*(t-t0)^2*a5 + 20*(t-t0)^3*a6;
+%                         2*b3 + 6*(t-t0)*b4 + 12*(t-t0)^2*b5 + 20*(t-t0)^3*b6];
                     
         %% Errors     
         
@@ -184,7 +184,7 @@ while 1
         rA_dot = rA_dot + rA_dot_dot.*dt;
         rA = rA + rA_dot.*dt + rA_dot_dot.*(dt^2/2);
         
-
+        
         
         q = q + invJ(q)*e_A;
 %         q_dot_dot = invJ(q)*rA_dot_dot - invJ(q)*dotJ(q,q_dot)*invJ(q)*rA_dot;
@@ -244,6 +244,30 @@ function [a,  b,  c,  d, e, f] = Poli5( q_0, q_1, w_0, w_1, e_0, e_1, T)
 end               
             
             
+function ret = M(q)
+
+    global m1 m2 L1 L2
+    
+    ret = [ (m1+m2)*L1^2 + m2*L2^2 + 2*m2*L1*L2*cos(q(2)),      m2*L2^2+m2*L1*L2*cos(q(2));
+            m2*L2^2+m2*L1*L2*cos(q(2)),                         m2*L2^2];
+    
+end
+
+function ret = V(q, q_dot)
+    
+    global m1 m2 L1 L2 
+    ret = [ -m2*L1*L2*(2*q_dot(1)*q_dot(2)+(q_dot(2)^2))*sin(q(2));
+            m2*L1*L2*(q_dot(1)^2)*sin(q(2))];
+        
+end
+
+function ret = G(q)
+    
+    global m1 m2 L1 L2 g
+    ret = [(m1+m2)*g*L1*cos(q(1)) + m2*g*L2*cos(q(1)+q(2));
+            m2*g*L2*cos(q(1)+q(2))];
+
+end
             
 
     

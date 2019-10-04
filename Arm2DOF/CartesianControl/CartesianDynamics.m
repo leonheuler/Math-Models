@@ -62,10 +62,21 @@ grid on; ylabel('Deg'); title('Err 2');
 %% Model Parameters
 global m1 m2 L1 L2 g Fv Kp Kv
 
-L1 = 1.0;   m1 = 1;
-L2 = 1.0;   m2 = 1;
+L1 = 0.5;   m1 = 3;
+L2 = 0.5;   m2 = 3;
 
 g = 9.81; dt = 0.01; t0 = 0;
+
+k1 = 10;
+k2 = 10; 
+
+Kp = [k1^2 0;
+      0  k2^2];
+
+Kv = [2*k1 0;
+      0 2*k2];
+ 
+
   
 Fv1 = 0.0;
 Fv2 = 0.0;
@@ -73,20 +84,25 @@ Fv2 = 0.0;
 Fv  = [Fv1 0;
        0   Fv2];
 %% Variables 
+q = [pi/12; pi/6];
+q_dot = [0; 0];
+q_dot_dot = [0; 0];
 
-q = [0; 0];
-q_dot = [0; 0];      
-q_dot_dot = [0; 0]; 
 
-q_d = [0; 0];
-q_dot_d = [0; 0];
-q_dot_dot_d = [0; 0];      
+rA = [ L1*cos(q(1)) + L2*cos(q(1) + q(2));
+       L1*sin(q(1)) + L2*sin(q(1) + q(2))];
+rA_dot = [0; 0];      
+rA_dot_dot = [0; 0]; 
+
+rA_d = [0; 0];
+rA_dot_d = [0; 0];
+rA_dot_dot_d = [0; 0];      
 
 e = [0; 0];
 e_dot = [0; 0];
 e_prev = [0; 0];
-tau = [0; 0];
-
+F = [0; 0];
+%%
 while 1
     
 
@@ -95,7 +111,7 @@ while 1
     
     switch cmd
         case 1
-            task = input('Specify initial conditions.. [q1d, q2d, T]: ');
+            task = input('Specify initial conditions.. [x_d, y_d, T]: ');
         case 2
             clearpoints(tr);
             clearpoints(q1_graph);
@@ -127,42 +143,51 @@ while 1
     end
     
 
-    q_d = [   task(1);
+    rA_d = [   task(1);
               task(2)];
 
     
     T = task(3);
 
-    [a1, a2, a3, a4, a5, a6] = Poli5(q(1), q_d(1), q_dot(1), 0, q_dot_dot(1), 0, T);
-    [b1, b2, b3, b4, b5, b6] = Poli5(q(2), q_d(2), q_dot(2), 0, q_dot_dot(2), 0, T);
+    [a1, a2, a3, a4, a5, a6] = Poli5(rA(1), rA_d(1), rA_dot(1), 0, rA_dot_dot(1), 0, T);
+    [b1, b2, b3, b4, b5, b6] = Poli5(rA(2), rA_d(2), rA_dot(2), 0, rA_dot_dot(2), 0, T);
     
 
+    
     t1 = t0 + T;
     for t = t0:dt:t1
         
         %% Poli5 trajectory interpolation
-        q_d = [a1 + (t-t0)*a2 + (t-t0)^2*a3 + (t-t0)^3*a4 + (t-t0)^4*a5 + (t-t0)^5*a6;
+        rA_d = [a1 + (t-t0)*a2 + (t-t0)^2*a3 + (t-t0)^3*a4 + (t-t0)^4*a5 + (t-t0)^5*a6;
                 b1 + (t-t0)*b2 + (t-t0)^2*b3 + (t-t0)^3*b4 + (t-t0)^4*b5 + (t-t0)^5*b6];
         
-        q_dot_d = [ a2 + 2*(t-t0)*a3 + 3*(t-t0)^2*a4 + 4*(t-t0)^3*a5 + 5*(t-t0)^4*a6;
-                    b2 + 2*(t-t0)*b3 + 3*(t-t0)^2*b4 + 4*(t-t0)^3*b5 + 5*(t-t0)^4*b6];
-            
-        q_dot_dot_d = [ 2*a3 + 6*(t-t0)*a4 + 12*(t-t0)^2*a5 + 20*(t-t0)^3*a6;
-                        2*b3 + 6*(t-t0)*b4 + 12*(t-t0)^2*b5 + 20*(t-t0)^3*b6];
-            
-        %% Error   
-        e = q_d - q;
+%         rA_dot_d = [ a2 + 2*(t-t0)*a3 + 3*(t-t0)^2*a4 + 4*(t-t0)^3*a5 + 5*(t-t0)^4*a6;
+%                     b2 + 2*(t-t0)*b3 + 3*(t-t0)^2*b4 + 4*(t-t0)^3*b5 + 5*(t-t0)^4*b6];
+%             
+%         rA_dot_dot_d = [ 2*a3 + 6*(t-t0)*a4 + 12*(t-t0)^2*a5 + 20*(t-t0)^3*a6;
+%                         2*b3 + 6*(t-t0)*b4 + 12*(t-t0)^2*b5 + 20*(t-t0)^3*b6];
+                    
+        %% Errors     
+        
+        e_A = rA_d - rA;      
+        e_A_dot = rA_dot_d - rA_dot;
         
         
-        %% Feedforward controller
-        tau = M(q)*(q_dot_dot_d) + N(q_d, q_dot_d);
+        %% PD controller
+        F = M(q)*(rA_dot_dot_d + Kp*e_A + Kv*e_A_dot) + N(q, q_dot);
         
 
+        
         %% Plant
-        q_dot_dot = invM(q)*(tau - N(q,q_dot));
-        q_dot = q_dot + q_dot_dot.*dt;
-        q = q + q_dot.*dt + q_dot_dot.*(dt^2/2);
-            
+
+        rA_dot_dot = invM(q)*(F - N(q,q_dot));
+        rA_dot = rA_dot + rA_dot_dot.*dt;
+        rA = rA + rA_dot.*dt + rA_dot_dot.*(dt^2/2);
+        
+        
+        
+        q = q + invJ(q)*e_A;
+%         q_dot_dot = invJ(q)*rA_dot_dot - invJ(q)*dotJ(q,q_dot)*invJ(q)*rA_dot;
         
         %% Forward Kinematics
 
@@ -170,8 +195,8 @@ while 1
                L1*sin(q(1))];
         r2 = [ L1*cos(q(1)) + L2*cos(q(1) + q(2));
                L1*sin(q(1)) + L2*sin(q(1) + q(2))];
-    
         
+
         %% Animation
 
         addpoints(h, 0, 0, 0);
@@ -182,18 +207,18 @@ while 1
         drawnow %limitrate;
         clearpoints(h);
        
-        addpoints(q1_graph, t, q(1));
-        addpoints(q2_graph, t, q(2));
-        addpoints(q1_d_graph, t, q_d(1));
-        addpoints(q2_d_graph, t, q_d(2));
+        addpoints(q1_graph, t, e_A(1));
+        addpoints(q2_graph, t, e_A(2));
+%         addpoints(q1_d_graph, t, q_d(1));
+%         addpoints(q2_d_graph, t, q_d(2));
         addpoints(w1_graph, t, q_dot(1));
         addpoints(w2_graph, t, q_dot(2));
         addpoints(e1_graph, t, q_dot_dot(1));
         addpoints(e2_graph, t, q_dot_dot(2));
-        addpoints(tau1_graph, t, tau(1));
-        addpoints(tau2_graph, t, tau(2));
-        addpoints(err1_graph, t, e(1));
-        addpoints(err2_graph, t, e(2));
+        addpoints(tau1_graph, t, F(1));
+        addpoints(tau2_graph, t, F(2));
+%         addpoints(err1_graph, t, e(1));
+%         addpoints(err2_graph, t, e(2));
     end
     
     addpoints(h, 0, 0, 0);
@@ -208,6 +233,17 @@ end
 
 
 
+          
+function [a,  b,  c,  d, e, f] = Poli5( q_0, q_1, w_0, w_1, e_0, e_1, T)
+
+    a = q_0; b = w_0; c = e_0/2;
+    d = -(20*(q_0) - 20*(q_1) + 12*T*(w_0) + 8*T*(w_1) + 3*T^2*(e_0) - T^2*(e_1))/(2*T^3);
+    e = (30*(q_0) - 30*(q_1) + 16*T*(w_0) + 14*T*(w_1) + 3*T^2*(e_0) - 2*T^2*(e_1))/(2*T^4);
+    f = -(12*(q_0) - 12*(q_1) + 6*T*(w_0) + 6*T*(w_1) + T^2*(e_0) - T^2*(e_1))/(2*T^5);
+
+end               
+            
+            
 function ret = M(q)
 
     global m1 m2 L1 L2
@@ -232,45 +268,9 @@ function ret = G(q)
             m2*g*L2*cos(q(1)+q(2))];
 
 end
+            
 
-
-function ret = F(q_dot)
     
-    global Fv
-
-    ret = Fv*q_dot;
-        
-end
-
-
-function ret = N(q,q_dot)
-
-    ret = V(q,q_dot) + F(q_dot) + G(q);
-          
-end
-            
-            
-            
-function [a,  b,  c,  d, e, f] = Poli5( q_0, q_1, w_0, w_1, e_0, e_1, T)
-
-    a = q_0; 
-    b = w_0; 
-    c = e_0/2;
-    d = -(20*(q_0) - 20*(q_1) + 12*T*(w_0) + 8*T*(w_1) + 3*T^2*(e_0) - T^2*(e_1))/(2*T^3);
-    e = (30*(q_0) - 30*(q_1) + 16*T*(w_0) + 14*T*(w_1) + 3*T^2*(e_0) - 2*T^2*(e_1))/(2*T^4);
-    f = -(12*(q_0) - 12*(q_1) + 6*T*(w_0) + 6*T*(w_1) + T^2*(e_0) - T^2*(e_1))/(2*T^5);
-
-end               
-            
-         
-function ret = invM(q)
-            
-    global m1 m2 L1 L2
- 
-    ret =  [                 1/(L1^2*(m1 + m2 - m2*cos(q(2))^2)),                             -(L1*cos(q(2)) + 1)/(L1^2*(m1 + m2 - m2*cos(q(2))^2));
-            -(L1*cos(q(2)) + 1)/(L1^2*(m1 + m2 - m2*cos(q(2))^2)), (m2 + L1^2*m1 + L1^2*m2 + 2*L1*m2*cos(q(2)))/(L1^2*m2*(m1 + m2 - m2*cos(q(2))^2))];
-
-end
     
     
     
