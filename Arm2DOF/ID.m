@@ -128,8 +128,8 @@ while 1
         drawnow %limitrate;
         clearpoints(h);
        
-        addpoints(q1_graph, t, q(1)*(180/pi) + 90);
-        addpoints(q2_graph, t, q(2)*(180/pi));
+        addpoints(q1_graph, t, q(1));
+        addpoints(q2_graph, t, q(2));
         addpoints(w1_graph, t, q_dot(1)*(180/pi));
         addpoints(w2_graph, t, q_dot(2)*(180/pi));
         addpoints(e1_graph, t, q_dot_dot(1)*(180/pi));
