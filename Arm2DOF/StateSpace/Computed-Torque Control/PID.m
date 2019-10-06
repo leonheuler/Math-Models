@@ -1,7 +1,3 @@
-%% Computed torque control simulation
-%   - state-space formulation;
-%   - solver uses mass-matrix (no inversion)
-
 %% Parameters
 global m1 m2 L1 L2 g 
 m1 = 1; m2 = 1; L1 = 1; L2 = 1; g = 9.81;
@@ -10,10 +6,12 @@ global Fv Fd
 Fv = diag([0 0]);
 Fd = diag([0 0]);
 
-global Kp Kv
+global Kp Kv Ki I
 Wn = 10;
 Kp = diag([Wn^2 Wn^2]);
 Kv = diag([2*Wn 2*Wn]);
+Ki = diag([1 1]);
+I = [0 0]';
 
 %% Error plots
 fig3 = figure(3);
@@ -35,18 +33,18 @@ grid on; legend('tau_1','tau_2');
 %% Solver config  
 fig1 = figure(1);
 clf('reset');
-opts_1 = odeset('Stats','on');
-opts_2 = odeset('Mass',@MassMatrix,'MStateDependence','strong','OutputFcn',@odeplot);
-opts_3 = odeset('RelTol',1e-3,'AbsTol',1e-5);
-opts = odeset(opts_1,opts_2,opts_3);
+opts_1 = odeset('Stats','on','OutputFcn',@odeplot);
+opts_2 = odeset('RelTol',1e-3,'AbsTol',1e-5);
+opts = odeset(opts_1,opts_2);
 
 tspan = [0 10];
 x0 = [0.1 0 0 0]';
 
 
+
 %% Solver  
 tic; 
-[t, x] = ode23t(@sys, tspan, x0, opts);
+[t, x] = ode23(@sys, tspan, x0, opts);
 toc;
 
 
@@ -55,11 +53,13 @@ toc;
 function dx = sys(t,x)
     
     global e1p e2p t1p t2p
-    global Kp Kv
-
+    global Kp Kv Ki I
+    
+    % Feedback
     q = [ x(1) x(2) ]';
     q_dot = [ x(3) x(4) ]';
     
+    % Desired trajectory in joint space
     q_d = [ 0.1*sin(2*pi*t/2);
             0.1*cos(2*pi*t/2)];
         
@@ -72,48 +72,45 @@ function dx = sys(t,x)
 
     e = q_d - q;
     e_dot = q_dot_d - q_dot;
-
+    I = I + Ki*e;
+    
     addpoints(e1p, t, e(1));
     addpoints(e2p, t, e(2));
     
+    % PD Computed-Torque
+    tau = M(q)*(q_dot_dot_d + Kp*e + Kv*e_dot + I) + N(q,q_dot);
 
-    tau = M(q)*(q_dot_dot_d + Kp*e + Kv*e_dot) + N(q,q_dot);
-    
     addpoints(t1p, t, tau(1));
     addpoints(t2p, t, tau(2));    
     
-    dx = cat(1, q_dot, -N(q, q_dot)) + cat(1,zeros(2,1), tau);
-
+    % Non-linear state-space formulation
+    dx = [ q_dot; -M(q)^-1*(N(q, q_dot)+[1;1])] + [zeros(2); M(q)^-1]*tau;
+    
+    % Linear state-space formulation
+%     u = -M(q)^-1*(N(q,q_dot)) + M(q)^-1*tau; 
+%     A = cat(2, zeros(4,2), cat(1, eye(2), zeros(2)));
+%     B = cat(1, zeros(2), eye(2));
+%     
+%     dx = A*x + B*u;
+                                  
 end
 
 
 function ret = M(q)
-
-    global m1 m2 L1 L2
-    
-    ret = [(m1+m2)*L1^2 + m2*L2^2 + 2*m2*L1*L2*cos(q(2)),      m2*L2^2+m2*L1*L2*cos(q(2));
-                   m2*L2^2+m2*L1*L2*cos(q(2)),                         m2*L2^2];
-    
-            
-end
-
-function ret = MassMatrix(t, q)
     global m1 m2 L1 L2 
-    Mss = [(m1+m2)*L1^2 + m2*L2^2 + 2*m2*L1*L2*cos(q(2)),      m2*L2^2+m2*L1*L2*cos(q(2));
-                   m2*L2^2+m2*L1*L2*cos(q(2)),                         m2*L2^2]; 
-    ret = blkdiag(eye(2), Mss);       
+    ret = [(m1+m2)*L1^2 + m2*L2^2 + 2*m2*L1*L2*cos(q(2)),      m2*L2^2+m2*L1*L2*cos(q(2));
+                   m2*L2^2+m2*L1*L2*cos(q(2)),                         m2*L2^2];        
 end
+
 
 function ret = N(q, q_dot)    
     ret = V(q,q_dot) + F(q_dot) + G(q);
 end
 
-function ret = V(q, q_dot)
-    
+function ret = V(q, q_dot)    
     global m1 m2 L1 L2 
     ret = [ -m2*L1*L2*(2*q_dot(1)*q_dot(2)+(q_dot(2)^2))*sin(q(2));
-            m2*L1*L2*(q_dot(1)^2)*sin(q(2))];
-        
+            m2*L1*L2*(q_dot(1)^2)*sin(q(2))];   
 end
 
 function ret = F(q_dot)
