@@ -6,13 +6,13 @@ global Fv Fd
 Fv = diag([0 0]);
 Fd = diag([0 0]);
 
-global Kp Kv Ki  taud
-Wn = 10;
+global Kp Kv Ki taud taumax
+Wn = 50;
 Kp = diag([Wn^2 Wn^2]);
 Kv = diag([2*Wn 2*Wn]);
-Ki = diag([500 500]);
+Ki = diag([1000 1000]);
 taud = [0; 0];
-
+taumax = 35;
 %% Error plots
 fig3 = figure(3);
 title('Errors');
@@ -53,7 +53,7 @@ toc;
 function dx = sys(t,x)
     
     global e1p e2p t1p t2p
-    global Kp Kv Ki taud
+    global Kp Kv Ki taud taumax
     
     % Feedback
     q = [ x(1) x(2) ]';
@@ -73,23 +73,31 @@ function dx = sys(t,x)
 
     e = q_d - q;
     e_dot = q_dot_d - q_dot;
-    
- 
 
     addpoints(e1p, t, e(1));
     addpoints(e2p, t, e(2));
     
-    % PD Computed-Torque
-    tau = M(q)*(q_dot_dot_d + Kp*e + Kv*e_dot + Ki*e_integral) + N(q,q_dot);
-
+    % Computed-torque control law
+    tau = Kp*e + Kv*e_dot + Ki*e_integral;
+    
+    if (abs(tau(1)) > taumax)
+        tau(1) = taumax*sign(tau(1));
+    end
+    
+    if (abs(tau(2)) > taumax)
+        tau(2) = taumax*sign(tau(2));
+    end
+    
     addpoints(t1p, t, tau(1));
     addpoints(t2p, t, tau(2));    
-    
-    % Non-linear state-space formulation
-    dx = [ q_dot; -M(q)^-1*(N(q, q_dot)); e] + [zeros(2); M(q)^-1; zeros(2)]*tau + [zeros(2); M(q)^-1; zeros(2) ]*taud;
+
+    % Non-linear state-space formulation 
+    dx = [ q_dot; -M(q)^-1*N(q, q_dot); e] + [zeros(2); M(q)^-1; zeros(2)]*tau + [zeros(2); M(q)^-1; zeros(2) ]*taud;
     
     % Linear state-space formulation (needs modifying!)
-%     u = -M(q)^-1*(N(q,q_dot)) + M(q)^-1*tau; 
+%     u = -M(q)^-1*(N(q,q_dot)) + M(q)^-1*tau;
+%     
+%     
 %     A = cat(2, zeros(4,2), cat(1, eye(2), zeros(2)));
 %     B = cat(1, zeros(2), eye(2));
 %     
