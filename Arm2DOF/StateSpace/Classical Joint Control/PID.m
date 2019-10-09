@@ -1,3 +1,4 @@
+%% Frank L.Lewis p222
 %% Parameters
 global m1 m2 L1 L2 g 
 m1 = 1; m2 = 1; L1 = 1; L2 = 1; g = 9.81;
@@ -77,7 +78,7 @@ function dx = sys(t,x)
     addpoints(e1p, t, e(1));
     addpoints(e2p, t, e(2));
     
-    % Computed-torque control law
+    % Computed-torque-like control law
     tau = Kp*e + Kv*e_dot + Ki*e_integral;
     
     if (abs(tau(1)) > taumax)
@@ -93,7 +94,7 @@ function dx = sys(t,x)
 
     % Non-linear state-space formulation 
     dx = [ q_dot; -M(q)^-1*N(q, q_dot); e] + [zeros(2); M(q)^-1; zeros(2)]*tau + [zeros(2); M(q)^-1; zeros(2) ]*taud;
-    
+      
     % Linear state-space formulation (needs modifying!)
 %     u = -M(q)^-1*(N(q,q_dot)) + M(q)^-1*tau;
 %     
@@ -104,6 +105,7 @@ function dx = sys(t,x)
 %     dx = A*x + B*u;
                                   
 end
+
 
 
 function ret = M(q)

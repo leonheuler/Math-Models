@@ -1,3 +1,4 @@
+%% Frank L.Lewis p.200
 %% Parameters
 global m1 m2 L1 L2 g 
 m1 = 1; m2 = 1; L1 = 1; L2 = 1; g = 9.81;
@@ -6,12 +7,13 @@ global Fv Fd
 Fv = diag([0 0]);
 Fd = diag([0 0]);
 
-global Kp Kv Ki  taud
+global Kp Kv Ki  taud 
 Wn = 10;
 Kp = diag([Wn^2 Wn^2]);
 Kv = diag([2*Wn 2*Wn]);
 Ki = diag([500 500]);
 taud = [0; 0];
+
 
 %% Error plots
 fig3 = figure(3);
@@ -53,7 +55,7 @@ toc;
 function dx = sys(t,x)
     
     global e1p e2p t1p t2p
-    global Kp Kv Ki taud
+    global Kp Kv Ki taud 
     
     % Feedback
     q = [ x(1) x(2) ]';
@@ -69,25 +71,25 @@ function dx = sys(t,x)
     
     q_dot_dot_d = [-0.1*pi^2*sin(2*pi*t/2);
                    -0.1*pi^2*cos(2*pi*t/2)];
-
-
+  
     e = q_d - q;
     e_dot = q_dot_d - q_dot;
     
- 
 
     addpoints(e1p, t, e(1));
     addpoints(e2p, t, e(2));
     
     % PD Computed-Torque
     tau = M(q)*(q_dot_dot_d + Kp*e + Kv*e_dot + Ki*e_integral) + N(q,q_dot);
+    
 
+    
     addpoints(t1p, t, tau(1));
     addpoints(t2p, t, tau(2));    
     
     % Non-linear state-space formulation
     dx = [ q_dot; -M(q)^-1*(N(q, q_dot)); e] + [zeros(2); M(q)^-1; zeros(2)]*tau + [zeros(2); M(q)^-1; zeros(2) ]*taud;
-    
+   
     % Linear state-space formulation (needs modifying!)
 %     u = -M(q)^-1*(N(q,q_dot)) + M(q)^-1*tau; 
 %     A = cat(2, zeros(4,2), cat(1, eye(2), zeros(2)));
@@ -96,6 +98,8 @@ function dx = sys(t,x)
 %     dx = A*x + B*u;
                                   
 end
+
+
 
 
 function ret = M(q)

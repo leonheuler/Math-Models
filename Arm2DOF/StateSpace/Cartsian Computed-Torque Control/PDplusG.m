@@ -1,7 +1,7 @@
-%% Frank L.Lewis p216,218
+%% Frank L.Lewis p.197
 %% Parameters
 global m1 m2 L1 L2 g 
-m1 = 1; m2 = 1; L1 = 1; L2 = 1; g = 9.81;
+m1 = 1; m2 = 1; L1 = 2; L2 = 2; g = 9.81;
 
 global Fv Fd
 Fv = diag([0 0]);
@@ -57,38 +57,50 @@ function dx = sys(t,x)
     % Feedback
     q = [ x(1) x(2) ]';
     q_dot = [ x(3) x(4) ]';
-
     
     % Desired trajectory in joint space
-    q_d = [ 0.1*sin(2*pi*t/2);
-            0.1*cos(2*pi*t/2)];
+    x_d = 2 + 0.5*cos(t);
+    y_d = 1 + 0.5*sin(t);
+    
+    x_dot_d = -0.5*sin(t);
+    y_dot_d = 0.5*cos(t);
+    
+    C =  (x_d^2 + y_d^2 - L1^2 + L2^2) / (2*L1*L2);
+    D = sqrt(1 - C^2);
+    
+    q2_d = atan2(D,C);
+    q_d = [ atan2(y_d, x_d) - atan2(L2*sin(q2_d), L1+L2*cos(q2_d)); 
+                                    q2_d
+            ];
+        
+        
+%     q_d = [ 0.1*sin(2*pi*t/2);
+%             0.1*cos(2*pi*t/2)];
         
     q_dot_d = [0.1*pi*cos(2*pi*t/2);
                -0.1*pi*sin(2*pi*t/2)];
     
     q_dot_dot_d = [-0.1*pi^2*sin(2*pi*t/2);
                    -0.1*pi^2*cos(2*pi*t/2)];
-
-
+    
+    
     e = q_d - q;
     e_dot = q_dot_d - q_dot;
 
     addpoints(e1p, t, e(1));
     addpoints(e2p, t, e(2));
     
-    % Computed-torque control law
-    tau = Kp*e + Kv*e_dot;
-    
+    % PD Computed-Torque
+    tau = M(q)*(q_dot_dot_d + Kp*e + Kv*e_dot) + N(q,q_dot);
+
     addpoints(t1p, t, tau(1));
     addpoints(t2p, t, tau(2));    
-
+    
     % Non-linear state-space formulation
     dx = [ q_dot; -M(q)^-1*N(q, q_dot)] + [zeros(2); M(q)^-1]*tau;
     
     % Linear state-space formulation
-%     u = -M(q)^-1*(N(q,q_dot)) + M(q)^-1*tau;
-%     
-%     
+%     u = -M(q)^-1*(N(q,q_dot)) + M(q)^-1*tau; 
 %     A = cat(2, zeros(4,2), cat(1, eye(2), zeros(2)));
 %     B = cat(1, zeros(2), eye(2));
 %     

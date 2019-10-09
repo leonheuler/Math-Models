@@ -10,10 +10,13 @@ global Fv Fd
 Fv = diag([0 0]);
 Fd = diag([0 0]);
 
-global Kp Kv
-Wn = 10;
+global Kp Kv Ki taud taumax
+Wn = 50;
 Kp = diag([Wn^2 Wn^2]);
 Kv = diag([2*Wn 2*Wn]);
+Ki = diag([0 0]);
+taud = [1; 1];
+taumax = 35;
 
 %% Error plots
 fig3 = figure(3);
@@ -42,6 +45,7 @@ opts = odeset(opts_1,opts_2,opts_3);
 
 tspan = [0 10];
 x0 = [0.1 0 0 0]';
+% x0 = [0.1 0 0 0 0 0]';
 
 
 %% Solver  
@@ -55,10 +59,11 @@ toc;
 function dx = sys(t,x)
     
     global e1p e2p t1p t2p
-    global Kp Kv
+    global Kp Kv Ki taud taumax
 
     q = [ x(1) x(2) ]';
     q_dot = [ x(3) x(4) ]';
+%     e_integral = [x(5) x(6)]';
     
     q_d = [ 0.1*sin(2*pi*t/2);
             0.1*cos(2*pi*t/2)];
@@ -76,14 +81,23 @@ function dx = sys(t,x)
     addpoints(e1p, t, e(1));
     addpoints(e2p, t, e(2));
     
-
     tau = M(q)*(q_dot_dot_d + Kp*e + Kv*e_dot) + N(q,q_dot);
+%     tau = M(q)*(q_dot_dot_d + Kp*e + Kv*e_dot + Ki*e_integral) + N(q,q_dot);
+ 
+%     if (abs(tau(1)) > taumax)
+%         tau(1) = taumax*sign(tau(1));
+%     end
+%     
+%     if (abs(tau(2)) > taumax)
+%         tau(2) = taumax*sign(tau(2));
+%     end
     
     addpoints(t1p, t, tau(1));
     addpoints(t2p, t, tau(2));    
     
-    dx = cat(1, q_dot, -N(q, q_dot)) + cat(1,zeros(2,1), tau);
-
+    dx = cat(1, q_dot, -N(q, q_dot)) + cat(1,zeros(2,1), tau) + cat(1,zeros(2,1), -taud);
+%     dx = [ q_dot; -(N(q, q_dot)); e] + [zeros(2); eye(2); zeros(2)]*tau + [zeros(2); -eye(2); zeros(2) ]*taud;
+ 
 end
 
 
