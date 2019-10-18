@@ -24,7 +24,7 @@ for i = 1:length(t)
         
         drawnow;
 
-        pause(0.05);
+        pause(0.01);
         
         clearpoints(h);
         
