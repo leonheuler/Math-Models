@@ -7,11 +7,11 @@ global Fv Fd
 Fv = diag([0 0]);
 Fd = diag([0 0]);
 
-global Kp Kv
-Wn = 10;
+global Kp Kv Ki
+Wn = 50;
 Kp = diag([Wn^2 Wn^2]);
 Kv = diag([2*Wn 2*Wn]);
-
+Ki = diag([1000 1000]);
 %% Error plots
 fig3 = figure(3);
 title('Errors');
@@ -28,6 +28,24 @@ global t1p t2p
 t1p = animatedline('Color', 'blue');
 t2p = animatedline('Color', 'red');
 grid on; legend('tau_1','tau_2');
+%% q plots
+fig5 = figure(5);
+title('q_d');
+clf('reset');
+global q1dp q2dp q1p q2p
+q1p = animatedline('Color', 'blue');
+q2p = animatedline('Color', 'red');
+q1dp = animatedline('Color', 'blue','LineStyle','--');
+q2dp = animatedline('Color', 'red','LineStyle','--');
+grid on; legend('q1','q2','q1_d','q2_d');
+%% Traj plots
+fig6 = figure(6);
+title('tr_d');
+clf('reset');
+global trp trdp
+trp = animatedline('Color', 'blue');
+trdp = animatedline('Color', 'red','LineStyle','--');
+grid on; legend('tr','tr_d');
 
 %% Solver config  
 fig1 = figure(1);
@@ -37,13 +55,13 @@ opts_2 = odeset('RelTol',1e-3,'AbsTol',1e-5);
 opts = odeset(opts_1,opts_2);
 
 tspan = [0 10];
-x0 = [0.1 0 0 0]';
+x0 = [0.1623 0.4365 0 0 0 0]';
 
 
 
 %% Solver  
 tic; 
-[t, x] = ode23(@sys, tspan, x0, opts);
+[t, x] = ode23s(@sys, tspan, x0, opts);
 toc;
 
 
@@ -51,15 +69,15 @@ toc;
 
 function dx = sys(t,x)
     
-    global e1p e2p t1p t2p
-    global Kp Kv
+    global e1p e2p t1p t2p q1dp q2dp q1p q2p  trp trdp
+    global Kp Kv Ki L1 L2
     
     % Feedback
     q = [ x(1) x(2) ]';
     q_dot = [ x(3) x(4) ]';
-    
+    e_integral = [x(5) x(6)]';
     % Desired trajectory in joint space
-    x_d = 2 + 0.5*cos(t);
+    x_d = 2.0 + 0.5*cos(t);
     y_d = 1 + 0.5*sin(t);
     
     x_dot_d = -0.5*sin(t);
@@ -73,16 +91,28 @@ function dx = sys(t,x)
                                     q2_d
             ];
         
+    addpoints(q1p, t, q(1));
+    addpoints(q2p, t, q(2));
+    addpoints(q1dp, t, q_d(1));
+    addpoints(q2dp, t, q_d(2));   
         
-%     q_d = [ 0.1*sin(2*pi*t/2);
-%             0.1*cos(2*pi*t/2)];
-        
-    q_dot_d = [0.1*pi*cos(2*pi*t/2);
-               -0.1*pi*sin(2*pi*t/2)];
+
+    q2_dot_d = (-2*(x_d*x_dot_d + y_d*y_dot_d)) / sqrt(((L1^2+L2^2)-(x_d^2+y_d^2))*((x_d^2+y_d^2)-(L1-L2)^2));
+    q1_dot_d = (x_d*y_dot_d - x_dot_d*y_d) / (y_d^2 + x_d^2) +  (L2*q2_dot_d*(L1*cos(q2_d)+L2)) / (L1+L2*cos(q2_d));
+
+    q_dot_d = [ q2_dot_d q1_dot_d ]';
     
-    q_dot_dot_d = [-0.1*pi^2*sin(2*pi*t/2);
-                   -0.1*pi^2*cos(2*pi*t/2)];
     
+
+    r2 = [  L1*cos(q(1)) + L2*cos(q(1) + q(2));
+            L1*sin(q(1)) + L2*sin(q(1) + q(2))];
+
+    r2d = [ L1*cos(q_d(1)) + L2*cos(q_d(1) + q_d(2));
+            L1*sin(q_d(1)) + L2*sin(q_d(1) + q_d(2))];
+           
+       
+    addpoints(trp, x_d, y_d);
+    addpoints(trdp, r2d(1), r2d(2));
     
     e = q_d - q;
     e_dot = q_dot_d - q_dot;
@@ -91,13 +121,13 @@ function dx = sys(t,x)
     addpoints(e2p, t, e(2));
     
     % PD Computed-Torque
-    tau = M(q)*(q_dot_dot_d + Kp*e + Kv*e_dot) + N(q,q_dot);
+    tau =  Kp*e + Kv*e_dot + Ki*e_integral + G(q);
 
     addpoints(t1p, t, tau(1));
     addpoints(t2p, t, tau(2));    
     
     % Non-linear state-space formulation
-    dx = [ q_dot; -M(q)^-1*N(q, q_dot)] + [zeros(2); M(q)^-1]*tau;
+    dx = [ q_dot; -M(q)^-1*N(q, q_dot); e] + [zeros(2); M(q)^-1; zeros(2)]*tau;
     
     % Linear state-space formulation
 %     u = -M(q)^-1*(N(q,q_dot)) + M(q)^-1*tau; 

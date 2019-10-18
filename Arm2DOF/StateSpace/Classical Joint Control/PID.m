@@ -45,7 +45,7 @@ x0 = [0.1 0 0 0 0 0]';
 
 %% Solver  
 tic; 
-[t, x] = ode23(@sys, tspan, x0, opts);
+[t, x] = ode23s(@sys, tspan, x0, opts);
 toc;
 
 
