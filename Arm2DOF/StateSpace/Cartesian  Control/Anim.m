@@ -8,7 +8,7 @@ q1 = x(:,1);
 q2 = x(:,2);
 
 trd = animatedline('Color','red','LineStyle','--');
-
+    
 for i = 1:length(t)
         
     r1 = [ L1*cos(q1(i)); 

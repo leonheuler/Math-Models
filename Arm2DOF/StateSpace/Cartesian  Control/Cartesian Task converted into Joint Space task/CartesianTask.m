@@ -4,7 +4,7 @@
 
 %% Parameters
 global m1 m2 L1 L2 g 
-m1 = 1; m2 = 1; L1 = 2; L2 = 2; g = 9.81;
+m1 = 5; m2 = 3; L1 = 0.5; L2 = 0.5; g = 9.81;
 
 global Fv Fd
 Fv = diag([25 25]);
@@ -35,14 +35,36 @@ t2p = animatedline('Color', 'red','LineWidth',1.0);
 grid on; legend('tau_1','tau_2');
 %% q plots
 fig5 = figure(5);
-title('q_d');
 clf('reset');
+subplot(3,1,1);
+title('q_d');
 global q1dp q2dp q1p q2p
 q1p = animatedline('Color', 'blue','LineWidth',1.0);
 q2p = animatedline('Color', 'red','LineWidth',1.0);
 q1dp = animatedline('Color', 'blue','LineStyle','--','LineWidth',1.0);
 q2dp = animatedline('Color', 'red','LineStyle','--','LineWidth',1.0);
 grid on; legend('q1','q2','q1_d','q2_d');
+
+subplot(3,1,2);
+title('w_d');
+% clf('reset');
+global w1dp w2dp w1p w2p
+w1p = animatedline('Color', 'blue','LineWidth',1.0);
+w2p = animatedline('Color', 'red','LineWidth',1.0);
+w1dp = animatedline('Color', 'blue','LineStyle','--','LineWidth',1.0);
+w2dp = animatedline('Color', 'red','LineStyle','--','LineWidth',1.0);
+grid on; legend('w1','w2','w1_d','w2_d');
+
+subplot(3,1,3);
+title('a_d');
+% clf('reset');
+global a1dp a2dp a1p a2p
+a1p = animatedline('Color', 'blue','LineWidth',1.0);
+a2p = animatedline('Color', 'red','LineWidth',1.0);
+a1dp = animatedline('Color', 'blue','LineStyle','--','LineWidth',1.0);
+a2dp = animatedline('Color', 'red','LineStyle','--','LineWidth',1.0);
+grid on; legend('a1','a2','a1_d','a2_d');
+
 %% Traj plots
 fig6 = figure(6);
 title('tr_d');
@@ -52,16 +74,7 @@ trp = animatedline('Color', 'blue','LineWidth',1.0);
 trdp = animatedline('Color', 'red','LineStyle','--','LineWidth',1.0);
 grid on; legend('tr','tr_d');
 axis equal;
-%% w plots
-fig7 = figure(7);
-title('q_d');
-clf('reset');
-global w1dp w2dp w1p w2p
-w1p = animatedline('Color', 'blue','LineWidth',1.0);
-w2p = animatedline('Color', 'red','LineWidth',1.0);
-w1dp = animatedline('Color', 'blue','LineStyle','--','LineWidth',1.0);
-w2dp = animatedline('Color', 'red','LineStyle','--','LineWidth',1.0);
-grid on; legend('w1','w2','w1_d','w2_d');
+
 
 %% Solver config  
 fig1 = figure(1);
@@ -74,17 +87,19 @@ opts = odeset(opts_1,opts_2);
 tspan = [0 2*pi];
 
 % Initial conditions (Cartesian)
-global x_d_0 y_d_0
-x_d_0 = 3.0;
-y_d_0 = 1;
-x_d = x_d_0 + 0.5*cos(0);
-y_d = y_d_0 + 0.5*sin(0);
-x_dot_d = -0.5*sin(0);
-y_dot_d = 0.5*cos(0);
+global r
+
+r = 0.1;
+
+x_d = r*sin(0);
+y_d = -(L1+L2)+1.001*r-r*cos(0);
+
+x_dot_d = r*cos(0);
+y_dot_d = r*sin(0);  
 
 % Inverse Kinematics
 C =  (x_d^2 + y_d^2 - L1^2 - L2^2) / (2*L1*L2);
-D = sqrt(1 - C^2);
+D = -sqrt(1 - C^2);
 q2_d = atan2(D,C);
 q1_d =  atan2(y_d, x_d) - atan2(L2*sin(q2_d), L1+L2*cos(q2_d)); 
 
@@ -107,29 +122,29 @@ toc;
 
 function dx = sys(t,x)
     
-    global e1p e2p t1p t2p q1dp q2dp q1p q2p  trp trdp w1p w2p w1dp w2dp
-    global Kp Kv Ki L1 L2
-    global x_d_0 y_d_0
+    global e1p e2p t1p t2p q1dp q2dp q1p q2p  trp trdp w1p w2p w1dp w2dp a1p a2p a1dp a2dp
+    global Kp Kv Ki L1 L2 r
+
     % Feedback
     q = [ x(1) x(2) ]';
     q_dot = [ x(3) x(4) ]';
     e_integral = [x(5) x(6)]';
     
     % Desired trajectory in joint space
-    x_d = x_d_0 + 0.5*cos(t);
-    y_d = y_d_0 + 0.5*sin(t);
-    
+    x_d = r*sin(t);
+    y_d = -(L1+L2)+1.001*r-r*cos(t);
+
     % Desired trajectory speed
-    x_dot_d = -0.5*sin(t);
-    y_dot_d = 0.5*cos(t);
-    
+    x_dot_d = r*cos(t);
+    y_dot_d = r*sin(t);    
+
     % Desired trajectory acceleration
-    x_dot_dot_d = -0.5*cos(t);
-    y_dot_dot_d = -0.5*sin(t);
+    x_dot_dot_d = -r*sin(t);
+    y_dot_dot_d = r*cos(t);
     
     % Inverse Kinmatics
     C = (x_d^2 + y_d^2 - (L1^2 + L2^2)) / (2*L1*L2);
-    D = sqrt(1 - C^2);
+    D = -sqrt(1 - C^2);
 
     q2_d = atan2(D,C);
     q1_d = atan2(y_d, x_d) - atan2(L2*sin(q2_d), L1+L2*cos(q2_d)); 
@@ -167,20 +182,26 @@ function dx = sys(t,x)
     addpoints(e2p, t, e(2));
     
     % PID joint-space computed-Torque without feedforward acceleration
-    tau =  M(q)*(q_dot_dot_d + Kp*e + Kv*e_dot + Ki*e_integral) + N(q, q_dot);
+%     tau =  M(q)*(q_dot_dot_d + Kp*e + Kv*e_dot + Ki*e_integral) + N(q, q_dot);
       
     % PD-plus-Gravity Control
 %     tau =   Kp*e + Kv*e_dot + G(q);
     
-    % Classical Joint Control
-%     tau =   Kp*e + Kv*e_dot + Ki*e_integral;
+    % Classical Joint Control (w=50)
+    tau =  Kp*e + Kv*e_dot + Ki*e_integral;
     
     addpoints(t1p, t, tau(1));
     addpoints(t2p, t, tau(2));    
     
     % Non-linear state-space formulation
     dx = [ q_dot; -M(q)^-1*N(q, q_dot); e] + [zeros(2); M(q)^-1; zeros(2)]*tau;
-
+    
+    q_dot_dot = [ dx(3); dx(4) ];
+    addpoints(a1dp, t, q_dot_dot_d(1)); 
+    addpoints(a2dp, t, q_dot_dot_d(2)); 
+    addpoints(a1p, t, q_dot_dot(1)); 
+    addpoints(a2p, t, q_dot_dot(2)); 
+    
     % Linear state-space formulation
 %     u = -M(q)^-1*(N(q,q_dot)) + M(q)^-1*tau; 
 %     A = cat(2, zeros(4,2), cat(1, eye(2), zeros(2)));
