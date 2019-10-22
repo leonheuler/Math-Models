@@ -10,7 +10,7 @@ Fv = diag([0 0]);
 Fd = diag([0 0]);
 
 global Kp Kv 
-Wn = 10;
+Wn = 4;
 Kp = diag([Wn^2 Wn^2]);
 Kv = diag([2*Wn 2*Wn]);
 
@@ -153,7 +153,7 @@ function dx = sys(t,x)
     addpoints(e1p, t, e(1));
     addpoints(e2p, t, e(2));
     
-    ydtdtd = [x_dot_dot_d y_dot_dot_d ]';
+    ydtdtd = [0;0];%[x_dot_dot_d y_dot_dot_d ]';
     % PD cartesian-space computed-Torque 
     tau =  M(q)*invJ(q)*(ydtdtd - Jdot(q,q_dot)*q_dot + Kp*e + Kv*e_dot ) + N(q, q_dot);
       

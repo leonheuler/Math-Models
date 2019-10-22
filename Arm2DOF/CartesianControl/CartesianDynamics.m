@@ -269,7 +269,11 @@ function ret = G(q)
 
 end
             
+function ret = N(q,q_dot)
+    
+    ret = V(q, q_dot) + G(q);
 
+end
     
     
     
