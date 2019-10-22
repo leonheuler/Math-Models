@@ -4,8 +4,8 @@ clf('reset');
 h = animatedline('LineWidth',2,'Marker','o');
 axis equal; grid on;
 tr = animatedline('Color','red');
-x = x(:,1);
-y = x(:,2);
+q1 = x(:,1);
+q2 = x(:,2);
 
 trd = animatedline('Color','red','LineStyle','--');
 
