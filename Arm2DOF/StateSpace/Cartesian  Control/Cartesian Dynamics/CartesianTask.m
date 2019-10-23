@@ -4,17 +4,17 @@
 
 %% Parameters
 global m1 m2 L1 L2 g 
-m1 = 1; m2 = 1; L1 = 2; L2 = 2; g = 9.81;
+m1 = 5; m2 = 3; L1 = 0.5; L2 = 0.5; g = 9.81;
 
 global Fv Fd
-Fv = diag([25 25]);
+Fv = diag([0 0]);
 Fd = diag([0 0]);
 
 global Kp Kv Ki
-Wn = 50;
+Wn = 100;
 Kp = diag([Wn^2 Wn^2]);
 Kv = diag([2*Wn 2*Wn]);
-Ki = diag([1000 1000]);
+Ki = diag([5000 5000]);
 
 
 %% Error plots
@@ -74,26 +74,33 @@ opts = odeset(opts_1,opts_2);
 tspan = [0 2*pi];
 
 % Initial conditions (Cartesian)
-global x_d_0 y_d_0
-x_d_0 = 3.0;
-y_d_0 = 1;
-x_d = x_d_0 + 0.5*cos(0);
-y_d = y_d_0 + 0.5*sin(0);
-x_dot_d = -0.5*sin(0);
-y_dot_d = 0.5*cos(0);
+global r
+r = 0.1;
+x_d = r*sin(0);
+y_d = -(L1+L2)+1.2*r-r*cos(0);
+x_dot_d = r*cos(0);
+y_dot_d = r*sin(0); 
 
 % Inverse Kinematics
 C =  (x_d^2 + y_d^2 - L1^2 - L2^2) / (2*L1*L2);
 D = sqrt(1 - C^2);
-q2_d = atan2(D,C);
-q1_d =  atan2(y_d, x_d) - atan2(L2*sin(q2_d), L1+L2*cos(q2_d)); 
+q2 = atan2(D,C);
+q1 =  atan2(y_d, x_d) - atan2(L2*sin(q2), L1+L2*cos(q2)); 
 
 % Inidial Conditions (Joint space)
-q_d = [ q1_d q2_d ]';
-q_dot_d = invJ(q_d)*[x_dot_d y_dot_d]';
+q = [ q1 q2 ]';
+q_dot = invJ(q)*[x_dot_d y_dot_d]';
+
+% Forward kinematics
+y = [ L1*cos(q(1)) + L2*cos(q(1)+q(2));
+      L1*sin(q(1)) + L2*sin(q(1)+q(2)) ];
+
+
+ydot = [ -L1*sin(q(1))*q_dot(1) - L2*sin(q(1)+q(2))*(q_dot(1)+q_dot(2));
+          L1*cos(q(1))*q_dot(1) + L2*cos(q(1) + q(2))*(q_dot(1) + q_dot(2)) ];
 
 % State-space initial conditions vector
-x0 = [q_d; q_dot_d; 0; 0];
+x0 = [y; ydot; 0; 0; q];
 
 
 %% Solver  
@@ -109,25 +116,29 @@ function dx = sys(t,x)
     
     global e1p e2p t1p t2p q1dp q2dp q1p q2p  trp trdp w1p w2p w1dp w2dp
     global Kp Kv Ki L1 L2
-    global x_d_0 y_d_0
+    global r
     % Feedback
-    q = [ x(1) x(2) ]';
-    q_dot = [ x(3) x(4) ]';
+    y = [ x(1) x(2) ]';
+    ydot = [ x(3) x(4) ]';
     e_integral = [x(5) x(6)]';
+    q = [ x(7) x(8) ];
+      
+    q_dot = invJ(q)*ydot;
     
-    % Desired trajectory in joint space
-    x_d = x_d_0 + 0.5*cos(t);
-    y_d = y_d_0 + 0.5*sin(t);
     
-    % Desired trajectory speed
-    x_dot_d = -0.5*sin(t);
-    y_dot_d = 0.5*cos(t);
+   % Desired trajectory in joint space
+    x_d = r*sin(t);
+    y_d = -(L1+L2)+1.2*r-r*cos(t);
+
+    x_dot_d = r*cos(t);
+    y_dot_d = r*sin(t);    
+
+    x_dot_dot_d = -r*sin(t);
+    y_dot_dot_d = r*cos(t);
+    ydotdotd = [ x_dot_dot_d y_dot_dot_d ]';
     
-    % Desired trajectory acceleration
-    x_dot_dot_d = -0.5*cos(t);
-    y_dot_dot_d = -0.5*sin(t);
     
-    % Inverse Kinmatics
+    % Inverse Kinmatics (для проверки отображение (x_d(t),y_d(t)) -> (q1_d(t), q2_d(t)) 
     C = (x_d^2 + y_d^2 - (L1^2 + L2^2)) / (2*L1*L2);
     D = sqrt(1 - C^2);
 
@@ -136,8 +147,9 @@ function dx = sys(t,x)
     
     q_d = [ q1_d q2_d ]';    
     q_dot_d = invJ(q)*[x_dot_d y_dot_d]';
-    q_dot_dot_d = invJ(q)*[x_dot_dot_d y_dot_dot_d]' - invJ(q)*Jdot(q,q_dot)*q_dot_d;
     
+%     q_dot_dot_d = invJ(q)*[x_dot_dot_d y_dot_dot_d]' - invJ(q)*Jdot(q,q_dot)*q_dot_d;
+   
     addpoints(q1p, t, q(1));
     addpoints(q2p, t, q(2));
     addpoints(q1dp, t, q_d(1));
@@ -148,7 +160,7 @@ function dx = sys(t,x)
     addpoints(w1dp, t, q_dot_d(1));
     addpoints(w2dp, t, q_dot_d(2));
     
-    % Forward
+    % Forward (animation purposes only)
     r2 = [  L1*cos(q(1)) + L2*cos(q(1) + q(2));
             L1*sin(q(1)) + L2*sin(q(1) + q(2))];
 
@@ -160,26 +172,26 @@ function dx = sys(t,x)
     addpoints(trdp, r2d(1), r2d(2));
     
     % Errors
-    e = q_d - q;
-    e_dot = q_dot_d - q_dot;
-
+    e = [ x_d y_d ]' - y;
+    e_dot = [ x_dot_d y_dot_d ]' - ydot;
+    
     addpoints(e1p, t, e(1));
     addpoints(e2p, t, e(2));
     
     % PID joint-space computed-Torque without feedforward acceleration
-%     tau =  M(q)*(q_dot_dot_d + Kp*e + Kv*e_dot + Ki*e_integral) + N(q, q_dot);
+%     f =  transpose(invJ(q)) * ( M(q)*(invJ(q_d)*ydotdotd - invJ(q_d)*Jdot(q_d,q_dot_d)*q_dot_d + Kp*e + Kv*e_dot + Ki*e_integral) + N(q, q_dot) );
       
     % PD-plus-Gravity Control
-%     tau =   Kp*e + Kv*e_dot + G(q);
+%     f = Kp*e + Kv*e_dot + transpose(invJ(q))*G(q);
     
     % Classical Joint Control
-    tau =   Kp*e + Kv*e_dot + Ki*e_integral;
+    f = Kp*e + Kv*e_dot + Ki*e_integral;
     
-    addpoints(t1p, t, tau(1));
-    addpoints(t2p, t, tau(2));    
+    addpoints(t1p, t, f(1));
+    addpoints(t2p, t, f(2));    
     
     % Non-linear state-space formulation
-    dx = [ q_dot; -M(q)^-1*N(q, q_dot); e] + [zeros(2); M(q)^-1; zeros(2)]*tau;
+    dx = [ ydot; -My(q)^-1*Ny(q, q_dot); e; q_dot] + [zeros(2); My(q)^-1; zeros(2); zeros(2)]*f;
 
     % Linear state-space formulation
 %     u = -M(q)^-1*(N(q,q_dot)) + M(q)^-1*tau; 
@@ -190,6 +202,17 @@ function dx = sys(t,x)
                                   
 end
 
+function ret = My(q)
+
+    ret = transpose(invJ(q))*M(q)*invJ(q);
+
+end
+
+function ret = Ny(q, q_dot)
+    
+    ret = transpose(invJ(q))*(  N(q,q_dot) - M(q)*invJ(q)*Jdot(q, q_dot)*q_dot  );
+
+end
 
 function ret = M(q)
     global m1 m2 L1 L2 

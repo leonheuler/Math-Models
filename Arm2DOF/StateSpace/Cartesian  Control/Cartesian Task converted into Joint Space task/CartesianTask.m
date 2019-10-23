@@ -7,7 +7,7 @@ global m1 m2 L1 L2 g
 m1 = 5; m2 = 3; L1 = 0.5; L2 = 0.5; g = 9.81;
 
 global Fv Fd
-Fv = diag([25 25]);
+Fv = diag([0 0]);
 Fd = diag([0 0]);
 
 global Kp Kv Ki
@@ -99,7 +99,7 @@ y_dot_d = r*sin(0);
 
 % Inverse Kinematics
 C =  (x_d^2 + y_d^2 - L1^2 - L2^2) / (2*L1*L2);
-D = -sqrt(1 - C^2);
+D = sqrt(1 - C^2);
 q2_d = atan2(D,C);
 q1_d =  atan2(y_d, x_d) - atan2(L2*sin(q2_d), L1+L2*cos(q2_d)); 
 
@@ -144,7 +144,7 @@ function dx = sys(t,x)
     
     % Inverse Kinmatics
     C = (x_d^2 + y_d^2 - (L1^2 + L2^2)) / (2*L1*L2);
-    D = -sqrt(1 - C^2);
+    D = sqrt(1 - C^2);
 
     q2_d = atan2(D,C);
     q1_d = atan2(y_d, x_d) - atan2(L2*sin(q2_d), L1+L2*cos(q2_d)); 

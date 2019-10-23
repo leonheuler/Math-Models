@@ -8,13 +8,13 @@ m1 = 5; m2 = 3; L1 = 0.5; L2 = 0.5; g = 9.81;
 
 global Fv Fd
 Fv = diag([0 0]);
-Fd = diag([00 0]); 
+Fd = diag([0 0]); 
 
 global Kp Kv Ki
 Wn = 10;
 Kp = diag([Wn^2 Wn^2]);
 Kv = diag([2*Wn 2*Wn]);
-Ki = diag([0 0]);
+Ki = diag([500 500]);
 
 
 %% Error plots
@@ -104,7 +104,7 @@ y_dot_0 = r*sin(0);
 % q1_d =  atan2(y_d, x_d) - atan2(L2*sin(q2_d), L1+L2*cos(q2_d)); 
 
 % Inidial Conditions (Joint space)
-q_0 = [ -pi/2 -0.001 ]';
+q_0 = [ -pi/2 0.001 ]';
 q_dot_0 = invJ(q_0)*[x_dot_0 y_dot_0]';
 % q_dot_d = [0 0]';
 
@@ -132,7 +132,8 @@ function dx = sys(t,x)
     q_dot = [ x(3) x(4) ]';
     ey_integral = [x(5) x(6)]';
     
-
+    
+    % Forward kinematics
     y = [ L1*cos(q(1)) + L2*cos(q(1)+q(2));
           L1*sin(q(1)) + L2*sin(q(1)+q(2)) ];
 
@@ -155,7 +156,7 @@ function dx = sys(t,x)
     
     % Inverse Kinmatics
     C = (x_d^2 + y_d^2 - (L1^2 + L2^2)) / (2*L1*L2);
-    D = -sqrt(1 - C^2);
+    D = sqrt(1 - C^2);
     
     q2_d = atan2(D,C);
     q1_d = atan2(y_d, x_d) - atan2(L2*sin(q2_d), L1+L2*cos(q2_d)); 
