@@ -11,10 +11,10 @@ Fv = diag([0 0]);
 Fd = diag([0 0]);
 
 global Kp Kv Ki
-Wn = 100;
+Wn = 10;
 Kp = diag([Wn^2 Wn^2]);
 Kv = diag([2*Wn 2*Wn]);
-Ki = diag([5000 5000]);
+Ki = diag([500 500]);
 
 
 %% Error plots
@@ -126,7 +126,7 @@ function dx = sys(t,x)
     q_dot = invJ(q)*ydot;
     
     
-   % Desired trajectory in joint space
+   % Desired trajectory in cartesian space
     x_d = r*sin(t);
     y_d = -(L1+L2)+1.2*r-r*cos(t);
 
@@ -138,7 +138,7 @@ function dx = sys(t,x)
     ydotdotd = [ x_dot_dot_d y_dot_dot_d ]';
     
     
-    % Inverse Kinmatics (для проверки отображение (x_d(t),y_d(t)) -> (q1_d(t), q2_d(t)) 
+    % Inverse Kinmatics (для проверки отображения (x_d(t),y_d(t)) -> (q1_d(t), q2_d(t)))
     C = (x_d^2 + y_d^2 - (L1^2 + L2^2)) / (2*L1*L2);
     D = sqrt(1 - C^2);
 
@@ -179,16 +179,18 @@ function dx = sys(t,x)
     addpoints(e2p, t, e(2));
     
     % PID joint-space computed-Torque without feedforward acceleration
-%     f =  transpose(invJ(q)) * ( M(q)*(invJ(q_d)*ydotdotd - invJ(q_d)*Jdot(q_d,q_dot_d)*q_dot_d + Kp*e + Kv*e_dot + Ki*e_integral) + N(q, q_dot) );
+    f =  transpose(invJ(q)) * ( M(q)*(invJ(q_d)*ydotdotd - invJ(q_d)*Jdot(q_d,q_dot_d)*q_dot_d + Kp*e + Kv*e_dot + Ki*e_integral) + N(q, q_dot) );
       
     % PD-plus-Gravity Control
 %     f = Kp*e + Kv*e_dot + transpose(invJ(q))*G(q);
     
     % Classical Joint Control
-    f = Kp*e + Kv*e_dot + Ki*e_integral;
+%     f = Kp*e + Kv*e_dot + Ki*e_integral; 
     
-    addpoints(t1p, t, f(1));
-    addpoints(t2p, t, f(2));    
+    tau = transpose(Jac(q))*f;
+    
+    addpoints(t1p, t, tau(1));
+    addpoints(t2p, t, tau(2));    
     
     % Non-linear state-space formulation
     dx = [ ydot; -My(q)^-1*Ny(q, q_dot); e; q_dot] + [zeros(2); My(q)^-1; zeros(2); zeros(2)]*f;
@@ -259,7 +261,14 @@ function ret = Jdot(q, q_dot)
 
 end
 
+function ret = Jac(q)
 
+    global L1 L2
+    
+    ret = [ - L2*sin(q(1) + q(2)) - L1*sin(q(1)), -L2*sin(q(1) + q(2));
+             L2*cos(q(1) + q(2)) + L1*cos(q(1)),  L2*cos(q(1) + q(2)) ];
+
+end
 
 
 
