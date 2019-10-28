@@ -7,8 +7,8 @@ global m1 m2 L1 L2 g
 m1 = 5; m2 = 3; L1 = 0.5; L2 = 0.5; g = 9.81;
 
 global Fv Fd
-Fv = diag([0 0]);
-Fd = diag([0 0]); 
+Fv = diag([5 5]);
+Fd = diag([2 2]); 
 
 global Kp Kv Ki
 Wn = 10;
@@ -80,7 +80,7 @@ axis equal;
 fig1 = figure(1);
 clf('reset');
 opts_1 = odeset('Stats','on','OutputFcn',@odeplot);
-opts_2 = odeset('RelTol',1e-3,'AbsTol',1e-5);
+opts_2 = odeset('RelTol',1e-2,'AbsTol',1e-4);
 opts = odeset(opts_1,opts_2);
 
 % Simulation time
@@ -115,7 +115,7 @@ x0 = [q_0; q_dot_0; 0; 0];
 
 %% Solver  
 tic; 
-[t, x] = ode23s(@sys, tspan, x0, opts);
+[t, x] = ode45(@sys, tspan, x0, opts);
 toc;
 
 

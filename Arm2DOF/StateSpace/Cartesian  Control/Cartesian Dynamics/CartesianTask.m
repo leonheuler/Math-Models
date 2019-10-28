@@ -7,11 +7,11 @@ global m1 m2 L1 L2 g
 m1 = 5; m2 = 3; L1 = 0.5; L2 = 0.5; g = 9.81;
 
 global Fv Fd
-Fv = diag([0 0]);
-Fd = diag([0 0]);
+Fv = diag([5 5]);
+Fd = diag([1 1]);
 
 global Kp Kv Ki
-Wn = 10;
+Wn = 100;
 Kp = diag([Wn^2 Wn^2]);
 Kv = diag([2*Wn 2*Wn]);
 Ki = diag([500 500]);
@@ -105,7 +105,7 @@ x0 = [y; ydot; 0; 0; q];
 
 %% Solver  
 tic; 
-[t, x] = ode23s(@sys, tspan, x0, opts);
+[t, x] = ode45(@sys, tspan, x0, opts);
 toc;
 
 
@@ -179,13 +179,13 @@ function dx = sys(t,x)
     addpoints(e2p, t, e(2));
     
     % PID joint-space computed-Torque without feedforward acceleration
-    f =  transpose(invJ(q)) * ( M(q)*(invJ(q_d)*ydotdotd - invJ(q_d)*Jdot(q_d,q_dot_d)*q_dot_d + Kp*e + Kv*e_dot + Ki*e_integral) + N(q, q_dot) );
+%     f =  transpose(invJ(q)) * ( M(q)*(invJ(q_d)*ydotdotd - invJ(q_d)*Jdot(q_d,q_dot_d)*q_dot_d + Kp*e + Kv*e_dot + Ki*e_integral) + N(q, q_dot) );
       
     % PD-plus-Gravity Control
 %     f = Kp*e + Kv*e_dot + transpose(invJ(q))*G(q);
     
     % Classical Joint Control
-%     f = Kp*e + Kv*e_dot + Ki*e_integral; 
+    f = Kp*e + Kv*e_dot + Ki*e_integral; 
     
     tau = transpose(Jac(q))*f;
     

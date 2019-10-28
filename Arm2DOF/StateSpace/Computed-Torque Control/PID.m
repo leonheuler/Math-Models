@@ -4,8 +4,8 @@ global m1 m2 L1 L2 g
 m1 = 1; m2 = 1; L1 = 1; L2 = 1; g = 9.81;
 
 global Fv Fd
-Fv = diag([0 0]);
-Fd = diag([0 0]);
+Fv = diag([6 6]);
+Fd = diag([2 2]);
 
 global Kp Kv Ki  taud 
 Wn = 10;

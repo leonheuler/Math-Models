@@ -7,11 +7,11 @@ global m1 m2 L1 L2 g
 m1 = 5; m2 = 3; L1 = 0.5; L2 = 0.5; g = 9.81;
 
 global Fv Fd
-Fv = diag([10 10]);
-Fd = diag([5.0 5.0]);
+Fv = diag([4 4]);
+Fd = diag([0.0 0.0]);
 
 global Kp Kv Ki
-Wn = 10;
+Wn = 12;
 Kp = diag([Wn^2 Wn^2]);
 Kv = diag([2*Wn 2*Wn]);
 Ki = diag([500 500]);
@@ -74,7 +74,16 @@ trp = animatedline('Color', 'blue','LineWidth',1.0);
 trdp = animatedline('Color', 'red','LineStyle','--','LineWidth',1.0);
 grid on; legend('tr','tr_d');
 axis equal;
-%% ----------------------------------------------
+
+%% Friction force plot
+    % fig7 = figure(7);
+    % clf('reset');
+    % title('Friction');
+    % global f1p f2p
+    % f1p = animatedline('Color','blue');
+    % f2p = animatedline('Color', 'red');
+    % grid on; axis auto;
+    % legend('Friction1','Friction2');
 
 % Initial conditions (Cartesian)
 global r
@@ -99,21 +108,21 @@ q_dot_d = invJ(q_d)*[x_dot_d y_dot_d]';
 
 % State-space initial conditions vector
 x0 = [q_d; q_dot_d; 0; 0];
-
 %% Solver config  
 fig1 = figure(1);
 clf('reset');
-opts_1 = odeset('Stats','on','OutputFcn',@odeplot);
-opts_2 = odeset('RelTol',1e-2,'AbsTol',1e-4);
-opts_3 = odeset('Events', @events);
-opts = odeset(opts_1,opts_2,opts_3);
+opts_1 = odeset('Events', @events,'Stats','on','OutputFcn',@odeplot);
+% opts_2 = odeset('RelTol',1e-2,'AbsTol',1e-4);
+% opts = odeset(opts_1,opts_2);
+opts = odeset(opts_1);
 
 % Simulation time
-% tspan = [0 2*pi];
-tspan = 0:0.01:2*pi;
+tspan = [0 2*pi];
+
+
 %% Solver  
 tic; 
-[t, x] = ode45(@sys, tspan, x0, opts);
+[t, x] = ode23s(@sys, tspan, x0, opts);
 toc;
 
 
@@ -122,7 +131,7 @@ toc;
 
 function dx = sys(t,x)
     
-    global e1p e2p t1p t2p q1dp q2dp q1p q2p  trp trdp w1p w2p w1dp w2dp a1p a2p a1dp a2dp
+    global f1p f2p e1p e2p t1p t2p q1dp q2dp q1p q2p  trp trdp w1p w2p w1dp w2dp a1p a2p a1dp a2dp
     global Kp Kv Ki L1 L2 r
 
     % Feedback
@@ -158,6 +167,10 @@ function dx = sys(t,x)
     addpoints(q1dp, t, q_d(1));
     addpoints(q2dp, t, q_d(2));  
     
+%     Ftrenie = F(q_dot);
+%     addpoints(f1p, q(1), Ftrenie(1));
+%     addpoints(f2p, q(2), Ftrenie(2));
+    
     addpoints(w1p, t, q_dot(1));
     addpoints(w2p, t, q_dot(2));
     addpoints(w1dp, t, q_dot_d(1));
@@ -189,14 +202,6 @@ function dx = sys(t,x)
     
     % Classical Joint Control (w=50)
     tau =  Kp*e + Kv*e_dot + Ki*e_integral;
-    
-    if (abs(tau(1) > 60))
-        tau(1) = 60*sign(tau(1));
-    end
-    
-    if (abs(tau(2) > 50))
-        tau(2) = 50*sign(tau(2));
-    end
     
     addpoints(t1p, t, tau(1));
     addpoints(t2p, t, tau(2));    
@@ -246,7 +251,20 @@ end
 
 function ret = F(q_dot)
     global Fv Fd
-    ret = Fv*q_dot + Fd*sign(q_dot); 
+    
+    w = q_dot;
+    brkwy_trq = [5; 5];        
+    brkwy_vel = [0.001; 0.001];   
+    Col_trq = [4; 4];
+    visc_coef = [0.001; 0.001];
+    
+    static_scale = sqrt(2*exp(1))*(brkwy_trq-Col_trq);
+    static_thr = sqrt(2)*brkwy_vel;                     % Velocity threshold for static torque
+    Col_thr = brkwy_vel./10;    
+    
+    ret = visc_coef .* w ...
+         + static_scale .* (w./static_thr.*exp(-(w./static_thr).^2)) ...
+         + Col_trq .* tanh(w./Col_thr); 
 end
 
 function ret = G(q)   
