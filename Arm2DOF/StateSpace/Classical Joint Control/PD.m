@@ -57,7 +57,7 @@ function dx = sys(t,x)
     % Feedback
     q = [ x(1) x(2) ]';
     q_dot = [ x(3) x(4) ]';
-    z = [ x(5) ];
+
     
     % Desired trajectory in joint space
     q_d = [ 0.1*sin(2*pi*t/2);
