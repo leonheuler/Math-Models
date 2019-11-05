@@ -3,16 +3,16 @@
 % syms L1 L2 L3 m1 m2 m3 g
 L1 = 0.5;
 L2 = 0.5;
-L3 = 0.5;
-m1 = 1;
-m2 = 1;
-m3 = 1;
+L3 = 1;
+m1 = 3;
+m2 = 3;
+m3 = 5;
 g = 9.81;
 
 % желаемые положения и скорости pi/3 pi/12 -pi/12
-q1d = 0; q1dotd = 0; q1ddotd = 0;
-q2d = 0; q2dotd = 0; q2ddotd = 0;
-q3d = 0; q3dotd = 0; q3ddotd = 0;
+q1d = pi/12; q1dotd = 0; q1ddotd = 0;
+q2d = pi/6; q2dotd = 0; q2ddotd = 0;
+q3d = pi/6; q3dotd = 0; q3ddotd = 0;
 
 % линейные положения точечных масс
 syms t
@@ -71,9 +71,9 @@ tau2 = -Kp(2)*(q2 - q2d) - Kv(2)*(diff(q2,t) - q2dotd );
 tau3 = -Kp(3)*(q3 - q3d) - Kv(3)*(diff(q3,t) - q3dotd );
 
 % дифференциальные уравения движения
-diffEq1 = diff(dKq1dot,t) - dLq1 + F(diff(q1,t)) - tau1;
-diffEq2 = diff(dKq2dot,t) - dLq2 + F(diff(q2,t)) - tau2;
-diffEq3 = diff(dKq3dot,t) - dLq3 + F(diff(q3,t)) - tau3;
+diffEq1 = diff(dKq1dot,t) - dLq1 - tau1 + F(diff(q1,t));
+diffEq2 = diff(dKq2dot,t) - dLq2  - tau2 + F(diff(q2,t));
+diffEq3 = diff(dKq3dot,t) - dLq3 - tau3 + F(diff(q3,t));
 
 % переменные в дифф. ур-ях движения
 variables = { q1, q2, q3, diff(q1,t), diff(q2,t), diff(q3,t), diff(q1,t,2), diff(q2,t,2), diff(q3,t,2) };
@@ -98,13 +98,13 @@ tau3d = eval(subs(diffEq3, variables, variablesshort2));
 
 disp([tau1d tau2d tau3d]);
 
-% запись уравнений 
+% 
 str1 = char(tau1);
 str2 = char(tau2);
 str3 = char(tau3);
-str1 = strrep(str1, 'diff(q1(t),t)','x(4)'); str2 = strrep(str2, 'diff(q1(t),t)','x(4)'); str3 = strrep(str3, 'diff(q1(t),t)','x(4)');
-str1 = strrep(str1, 'diff(q2(t),t)','x(5)'); str2 = strrep(str2, 'diff(q2(t),t)','x(5)'); str3 = strrep(str3, 'diff(q2(t),t)','x(5)');
-str1 = strrep(str1, 'diff(q3(t),t)','x(6)'); str2 = strrep(str2, 'diff(q3(t),t)','x(6)'); str3 = strrep(str3, 'diff(q3(t),t)','x(6)');
+str1 = strrep(str1, 'diff(q1(t), t)','x(4)'); str2 = strrep(str2, 'diff(q1(t), t)','x(4)'); str3 = strrep(str3, 'diff(q1(t), t)','x(4)');
+str1 = strrep(str1, 'diff(q2(t), t)','x(5)'); str2 = strrep(str2, 'diff(q2(t), t)','x(5)'); str3 = strrep(str3, 'diff(q2(t), t)','x(5)');
+str1 = strrep(str1, 'diff(q3(t), t)','x(6)'); str2 = strrep(str2, 'diff(q3(t), t)','x(6)'); str3 = strrep(str3, 'diff(q3(t), t)','x(6)');
 str1 = strrep(str1, 'q1(t)','x(1)'); str2 = strrep(str2, 'q1(t)','x(1)'); str3 = strrep(str3, 'q1(t)','x(1)');
 str1 = strrep(str1, 'q2(t)','x(2)'); str2 = strrep(str2, 'q2(t)','x(2)'); str3 = strrep(str3, 'q2(t)','x(2)');
 str1 = strrep(str1, 'q3(t)','x(3)'); str2 = strrep(str2, 'q3(t)','x(3)'); str3 = strrep(str3, 'q3(t)','x(3)');
@@ -136,7 +136,7 @@ eval(strqddot);
 
 time=[0 2];
 % initial conditions ======================================================
-x0=[pi/2+pi/12 pi/12 pi/12 0 0 0]; 
+x0=[0 0 0 0 0 0]; 
 str=['xdot=@(t,x)[x(4);x(5);x(6);',char(Q1DDOT),';',char(Q2DDOT),';',char(Q3DDOT),'];'];
 str = strrep(str, 'x1','x(1)');
 str = strrep(str, 'x2','x(2)');
@@ -144,13 +144,12 @@ str = strrep(str, 'x3','x(3)');
 str = strrep(str, 'x4','x(4)');
 str = strrep(str, 'x5','x(5)');
 str = strrep(str, 'x6','x(6)');
-
 eval(str);
 
 fig1 = figure(1);
 clf('reset');
 opts = odeset('Stats','on','OutputFcn',@odeplot);
-[t,q]=ode45(xdot,time,x0,opts);
+[t,q]=ode23(xdot,time,x0,opts);
 
 % вычислить положения звеньев как функции обобщенных координат
 X1 = L1*sin(q(:,1));
@@ -162,7 +161,7 @@ Y3 = L1*cos(q(:,1)) + L2*cos(q(:,2)-q(:,1)) + L3*cos(-q(:,3)+q(:,2)-q(:,1));
 
 for i=1:numel(q(:,1))-1
     qdd(i,1:3) = qddot(q(i,:))';
-    moments(i,1:3) = double(tau(q(i,1:3)));
+    moments(i,1:3) = tau(q(i,:));
 end
 
 fig2 = figure(2);
@@ -173,9 +172,17 @@ axis equal;
 
 fig3 = figure(3);
 clf('reset');
-e1plot = animatedline();
-e2plot = animatedline();
-e3plot = animatedline();
+e1plot = animatedline('Color',[0.00,0.45,0.74]);
+e2plot = animatedline('Color',[0.85,0.33,0.10]);
+e3plot = animatedline('Color',[0.93,0.69,0.13]);
+legend('err1','err2','err3');
+
+fig4 = figure(4);
+clf('reset');
+tau1p = animatedline('Color',[0.00,0.45,0.74]);
+tau2p = animatedline('Color',[0.85,0.33,0.10]);
+tau3p = animatedline('Color',[0.93,0.69,0.13]);
+legend('tau1','tau2','tau3');
 
 for i=1:numel(q(:,1))-1
     
@@ -187,6 +194,10 @@ for i=1:numel(q(:,1))-1
     addpoints(e1plot,i, q(i,1)-q1d );
     addpoints(e2plot,i, q(i,2)-q2d );
     addpoints(e3plot,i, q(i,3)-q3d );
+    
+    addpoints(tau1p,i,moments(i, 1));
+    addpoints(tau2p,i,moments(i, 2));
+    addpoints(tau3p,i,moments(i, 3));
     
     drawnow;
 %     pause(0.05);

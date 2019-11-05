@@ -11,7 +11,7 @@ for i=1:numel(q(:,1))-1
     addpoints(h, X2(i), Y2(i));
     addpoints(h, X3(i), Y3(i));
     addpoints(tr, X3(i), Y3(i));
-    drawnow limitrate;
+    drawnow ;
 %     pause(0.05);
     clearpoints(h);
 end
