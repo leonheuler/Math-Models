@@ -1,13 +1,13 @@
 
 % параметры
-% syms L1 L2 L3 m1 m2 m3 g
-L1 = 0.5;
-L2 = 0.5;
-L3 = 1;
-m1 = 3;
-m2 = 3;
-m3 = 5;
-g = 9.81;
+syms L1 L2 L3 m1 m2 m3 g
+% L1 = 0.5;
+% L2 = 0.5;
+% L3 = 1;
+% m1 = 3;
+% m2 = 3;
+% m3 = 5;
+% g = 9.81;
 
 % желаемые положения и скорости pi/3 pi/12 -pi/12
 q1d = pi/12; q1dotd = 0; q1ddotd = 0;
@@ -71,9 +71,9 @@ tau2 = -Kp(2)*(q2 - q2d) - Kv(2)*(diff(q2,t) - q2dotd );
 tau3 = -Kp(3)*(q3 - q3d) - Kv(3)*(diff(q3,t) - q3dotd );
 
 % дифференциальные уравения движения
-diffEq1 = diff(dKq1dot,t) - dLq1 - tau1 + F(diff(q1,t));
-diffEq2 = diff(dKq2dot,t) - dLq2  - tau2 + F(diff(q2,t));
-diffEq3 = diff(dKq3dot,t) - dLq3 - tau3 + F(diff(q3,t));
+diffEq1 = diff(dKq1dot,t) - dLq1 - tau1;% + F(diff(q1,t));
+diffEq2 = diff(dKq2dot,t) - dLq2  - tau2;% + F(diff(q2,t));
+diffEq3 = diff(dKq3dot,t) - dLq3 - tau3;% + F(diff(q3,t));
 
 % переменные в дифф. ур-ях движения
 variables = { q1, q2, q3, diff(q1,t), diff(q2,t), diff(q3,t), diff(q1,t,2), diff(q2,t,2), diff(q3,t,2) };
