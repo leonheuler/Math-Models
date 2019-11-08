@@ -1,6 +1,9 @@
+clear all
+
 syms L1 L2 L3 m1 m2 m3 g
-syms t
-syms q1(t) q2(t) 
+syms t real
+syms q1(t) 
+syms q2(t) 
 
 x1 = L1*cos(q1);
 y1 = L1*sin(q1);
@@ -13,8 +16,13 @@ x2dot = diff(x2,t);
 y2dot = diff(y2,t);
 
 % Kinetic energy
-K1 = m1/2*(x1dot^2+y1dot^2);
+K1 = m1/2*(x1dot^2+y1dot^2); 
+K1 = expand(K1,'ArithmeticOnly',true);
+K1 = combine(K1, 'sincos');
+
 K2 = m2/2*(x2dot^2+y2dot^2);
+K2 = expand(K2,'ArithmeticOnly',true);
+K2 = combine(K2, 'sincos');
 K = K1+K2;
 
 % Potential energy
