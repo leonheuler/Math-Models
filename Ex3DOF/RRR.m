@@ -1,7 +1,7 @@
 clear all
 
 tic
-simulation = 0;
+simulation = 0; % 0 - генерация функций M(q),N(q,qodt) в символьном виде для Solver.m
 
 syms t
 syms phi1(t) phi2(t) phi3(t)
@@ -13,7 +13,6 @@ if (simulation == 1)
 else
     syms L1 L2 L3 m1 m2 m3 g
 end
-
 
 
 x1 = L1*sin(phi1);
@@ -46,17 +45,14 @@ x3dot = diff(x3,t);
 y3dot = diff(y3,t);
 
 % Kinetic energy
-K1 = m1/2*(x1dot^2+y1dot^2); 
-% K1 = expand(K1,'ArithmeticOnly',true); % пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ.) 
-% K1 = combine(K1, 'sincos'); % пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ. пїЅпїЅпїЅпїЅпїЅ.
+I1 = 1/3*m1*L1^2;
+K1 = I1/2*q1dot^2;
 
-K2 = m2/2*(x2dot^2+y2dot^2);
-% K2 = expand(K2,'ArithmeticOnly',true);
-% K2 = combine(K2, 'sincos');
+I2 = 1/3*m2*L2^2;
+K2 = I2/2*q2dot^2 + m2/2*(x2dot^2+y2dot^2);
 
-K3 = m3/2*(x3dot^2+y3dot^2);
-% K3 = expand(K3,'ArithmeticOnly',true);
-% K3 = combine(K3, 'sincos');
+I3 = 1/3*m3*L3^2;
+K3 = I3/2*q3dot^2 + m3/2*(x3dot^2+y3dot^2);
 
 K = K1+K2+K3;
 
@@ -74,10 +70,10 @@ L = K - P;
 % Construction of diff eq-s of motion
 oldvars = { phi1, phi2, phi3, diff(phi1,t), diff(phi2,t), diff(phi3,t), diff(phi1,t,t), diff(phi2,t,t), diff(phi3,t,t)  };
 newvars = { q1, q2, q3, q1dot, q2dot, q3dot, q1ddot, q2ddot, q3ddot };
-L = subs(L, oldvars, newvars); % пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ L
+L = subs(L, oldvars, newvars); 
 
 % dL / dqdot
-dLq1dot = diff(subs(L, oldvars, newvars), q1dot); % пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ diff(L, diff(phi1,t))
+dLq1dot = diff(subs(L, oldvars, newvars), q1dot); 
 dLq2dot = diff(subs(L, oldvars, newvars), q2dot);
 dLq3dot = diff(subs(L, oldvars, newvars), q3dot);
 
@@ -91,7 +87,7 @@ dLq1 = diff(L, q1);
 dLq2 = diff(L, q2);
 dLq3 = diff(L, q3);
 
-w = 10;
+% w = 10;
 
 eq1 = dLq1dotdt - dLq1;% - w^2*(pi/12 - q1) - 2*w*(0-q1dot);
 eq2 = dLq2dotdt - dLq2;% - w^2*(0 - q2) - 2*w*(0-q2dot);
@@ -173,13 +169,15 @@ else
     opts = odeset('Stats','on','OutputFcn',@odeplot);
     
     % initial conditions ======================================================
-    time=[0 10];
-    tspan = 0:0.01:10;
+
+
     x0=[pi+pi/12 0 0 0 0 0]; 
     %% Solver  
     tic; 
-%     [t,q]=ode45(xdot,time,x0,opts);
-    q=ode1(xdot,tspan,x0);
+    time=[0 10];
+    [t,q]=ode23s(xdot,time,x0,opts);
+%     tspan = 0:0.01:10;
+%     q=ode4(xdot,tspan,x0);
     toc;
 
     X1 = L1*sin(q(:,1));
