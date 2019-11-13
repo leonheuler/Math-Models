@@ -28,15 +28,16 @@ fig1 = figure(1);
 clf('reset');
 opts_1 = odeset('Stats','on','OutputFcn',@odeplot);
 opts_2 = odeset('RelTol',1e-3,'AbsTol',1e-5);
-opts = odeset(opts_1);
+opts_3 = odeset('Mass',@MassMatrixFcn,'MStateDependence','strong');
+opts = odeset(opts_1,opts_3);
 
 q0 = [0 0 0 0 0 0 ]';
 
 tic; 
-% tspan = [0 10];
-% [t, q] = ode23s(@sys, tspan, q0,opts);
-tspan = 0:0.01:10;
-q = ode4(@sys, tspan, q0);
+tspan = [0 10];
+[t, q] = ode23t(@sys, tspan, q0,opts);
+% tspan = 0:0.01:10;
+% q = ode4(@sys, tspan, q0);
 toc;
 
 %%
@@ -105,8 +106,8 @@ function dx = sys(t,x)
     global m1 m2 m3 L1 L2 L3 g
     global tau1p tau2p tau3p
     
-    matrixM = M(t, g, x(1),x(2),x(3),m1,m2,m3,L1,L2,L3);
-    invM = inv(M(t, g, x(1),x(2),x(3),m1,m2,m3,L1,L2,L3));
+%     matrixM = M(t, g, x(1),x(2),x(3),m1,m2,m3,L1,L2,L3);
+%     invM = inv(M(t, g, x(1),x(2),x(3),m1,m2,m3,L1,L2,L3));
     vectorN = N(t,g,x(1),x(2),x(3),x(4),x(5),x(6),m1,m2,m3,L1,L2,L3);
 %     Jtranspose = transpose(J(t,x(1),x(2),x(3),L1,L2,L3));
     vectorG = G(t, g, x(1),x(2),x(3),m1,m2,m3,L1,L2,L3);
@@ -143,7 +144,7 @@ function dx = sys(t,x)
     TAU_MAX = 200;
     
 %     tau(1) = constrain(tau(1),-TAU_MAX,TAU_MAX);
-%     tau(2) = constrain(tau(2),-TAU_MAX,TAU_MAX);
+    tau(2) = constrain(tau(2),-TAU_MAX,TAU_MAX);
 %     tau(3) = constrain(tau(3),-TAU_MAX,TAU_MAX);
     
     addpoints(tau1p, t,tau(1));
@@ -151,8 +152,8 @@ function dx = sys(t,x)
     addpoints(tau3p, t,tau(3));
     
     
-    dx = [ x(4); x(5); x(6); -invM*vectorN] + [zeros(3); invM]*tau;
-    
+%     dx = [ x(4); x(5); x(6); -invM*vectorN] + [zeros(3); invM]*tau;
+    dx = [ x(4); x(5); x(6); -vectorN] + [zeros(3,1); tau];
 %     Ftip = [0; 0];             
 %     dx = [ x(4); x(5); x(6); -invM*vectorN] + [zeros(3); invM]*tau + [zeros(3,1); -matrixM \ (Jtranspose*Ftip)];
 
