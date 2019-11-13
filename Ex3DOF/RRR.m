@@ -17,10 +17,10 @@ end
 
 x1 = L1*sin(phi1);
 y1 = L1*cos(phi1);
-x2 = L1*sin(phi1) + L2*sin(phi2+phi1);
-y2 = L1*cos(phi1) + L2*cos(phi2+phi1);
-x3 = L1*sin(phi1) + L2*sin(phi2+phi1) + L3*sin(phi3+phi2+phi1);
-y3 = L1*cos(phi1) + L2*cos(phi2+phi1) + L3*cos(phi3+phi2+phi1);
+x2 = L1*sin(phi1) + L2*sin(-phi2+phi1);
+y2 = L1*cos(phi1) + L2*cos(-phi2+phi1);
+x3 = L1*sin(phi1) + L2*sin(-phi2+phi1) + L3*sin(phi3-phi2+phi1);
+y3 = L1*cos(phi1) + L2*cos(-phi2+phi1) + L3*cos(phi3-phi2+phi1);
 
 c1x =  x1/2; 
 c1y =  y1/2; 
@@ -33,9 +33,9 @@ x1 = c1x; y1 = c1y;
 x2 = c2x; y2 = c2y;
 x3 = c3x; y3 = c3y;
 
-
+fprintf('Calculating Jacobian...');
 J = jacobian([subs(x3,[phi1,phi2,phi3],[q1,q2,q3]), subs(y3,[phi1,phi2,phi3],[q1,q2,q3])], [q1, q2, q3]);
-
+fprintf('Completed\n');
 
 x1dot = diff(x1,t);
 y1dot = diff(y1,t);
@@ -64,7 +64,9 @@ P = P1 + P2 + P3;
 
 
 % Lagrangian
+fprintf('Calculating Lagrangian...');
 L = K - P;
+fprintf('Completed\n');
 % L = simplify(L);
 
 % Construction of diff eq-s of motion
@@ -89,15 +91,18 @@ dLq3 = diff(L, q3);
 
 % w = 10;
 
-eq1 = dLq1dotdt - dLq1;% - w^2*(pi/12 - q1) - 2*w*(0-q1dot);
-eq2 = dLq2dotdt - dLq2;% - w^2*(0 - q2) - 2*w*(0-q2dot);
-eq3 = dLq3dotdt - dLq3;% - w^2*(0 - q3) - 2*w*(0-q3dot);
+eq1 = dLq1dotdt - dLq1 + F(q1dot);% - w^2*(pi/12 - q1) - 2*w*(0-q1dot);
+eq2 = dLq2dotdt - dLq2 + F(q2dot);% - w^2*(0 - q2) - 2*w*(0-q2dot);
+eq3 = dLq3dotdt - dLq3 + F(q3dot);% - w^2*(0 - q3) - 2*w*(0-q3dot);
 
+fprintf('Simplifying diff. equations...');
 eq1 = simplify(eq1);
 eq2 = simplify(eq2);
 eq3 = simplify(eq3);
+fprintf('Completed\n');
 
 % Gathering elements of M from equations
+fprintf('Collecting elements of matrix M...');
 t11 = children(collect(eq1, q1ddot)); t12 = children(collect(eq1, q2ddot)); t13 = children(collect(eq1, q3ddot));
 t21 = children(collect(eq2, q1ddot)); t22 = children(collect(eq2, q2ddot)); t23 = children(collect(eq2, q3ddot));
 t31 = children(collect(eq3, q1ddot)); t32 = children(collect(eq3, q2ddot)); t33 = children(collect(eq3, q3ddot));
@@ -117,10 +122,11 @@ M33 = collect(coeffs( t33(1), q3ddot), [m1 m2 m3]);
 M = [ M11 M12 M12;
       M21 M22 M23;
       M31 M32 M33 ];
-
+fprintf('Completed\n');
 
 % Solve system of L diff. equations relative to angular accelerations
 % solution = solve(DiffEq1, DiffEq2,  q1ddot, q2ddot );
+fprintf('Solving and simplifying system of DE...');
 solution = solve(eq1, eq2, eq3,  q1ddot, q2ddot , q3ddot);
 
 Q1DDOT = solution.q1ddot;
@@ -130,27 +136,34 @@ Q3DDOT = solution.q3ddot;
 Q1DDOT = simplify(Q1DDOT);
 Q2DDOT = simplify(Q2DDOT);
 Q3DDOT = simplify(Q3DDOT);
+fprintf('Completed\n');
 
 % Calculate N vector
+fprintf('Calculating vector N...');
 N = -M*[Q1DDOT; Q2DDOT; Q3DDOT];
 N = simplify(N);
-
+fprintf('Completed\n');
 
 % Calculate G vector
+fprintf('Calculating vector G...');
 G1 = diff(subs(P,[phi1 phi2 phi3], [q1 q2 q3]),q1);
 G2 = diff(subs(P,[phi1 phi2 phi3], [q1 q2 q3]),q2);
 G3 = diff(subs(P,[phi1 phi2 phi3], [q1 q2 q3]),q3);
 G = [ G1; G2; G3 ];
+fprintf('Completed\n');
 
 % Calculate V vector
-V = simplify(N - G);
+% fprintf('Calculating vector V...');
+% V = simplify(N - G);
+% fprintf('Completed\n');
 
 if (simulation == 0)
+    fprintf('Generating functions...');
     matlabFunction(N, 'File','N','Vars', [t g q1 q2 q3 q1dot q2dot q3dot m1 m2 m3 L1 L2 L3] );
     matlabFunction(M, 'File','M','Vars', [t g q1 q2 q3 m1 m2 m3 L1 L2 L3] );
     matlabFunction(J, 'File','J','Vars', [t q1 q2 q3 L1 L2 L3] );
     matlabFunction(G, 'File','G','Vars', [t g q1 q2 q3 m1 m2 m3 L1 L2 L3] );
-
+    fprintf('Completed\n');
 else 
     matlabFunction(N, 'File','N','Vars', [q1 q2 q3 q1dot q2dot q3dot] );
     matlabFunction(M, 'File','M','Vars', [q1 q2 q3] );
@@ -221,10 +234,10 @@ toc
 function ret = F(q_dot)
     
     w = q_dot;
-    brkwy_trq = 2;        
-    brkwy_vel = 0.01;   
-    Col_trq = 1.4;
-    visc_coef = 0.01;
+    brkwy_trq = 100;        
+    brkwy_vel = 0.5;   
+    Col_trq = 60;
+    visc_coef = 0.5;
     
     static_scale = sqrt(2*exp(1))*(brkwy_trq-Col_trq);
     static_thr = sqrt(2)*brkwy_vel;                     % Velocity threshold for static torque
