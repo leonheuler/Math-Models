@@ -10,11 +10,11 @@ L3 = H - (L1 + L2);
 
 m1 = 0.0475*m;
 m2 = 0.105*m;
-m3 = 0.551*m;
+m3 = 0.551*m/2;
 
 g = 9.81;
 
-%%
+%% Plots
 fig3 = figure(3);
 clf('reset');
 global tau1p tau2p tau3p
@@ -39,15 +39,27 @@ q3p = animatedline('Color','blue');
 q3dp = animatedline('Color','red');
 grid on; legend('q3','q3_d');
 
-%% Solver config  
-fig1 = figure(1);
+fig5 = figure(5);
 clf('reset');
-opts_1 = odeset('Stats','on','OutputFcn',@odeplot);
+global fr1p fr2p fr3p
+subplot(3,1,1);
+fr1p = animatedline(); grid on;
+subplot(3,1,2);
+fr2p = animatedline(); grid on;
+subplot(3,1,3);
+fr3p = animatedline(); grid on;
+
+
+
+%% Solver config  
+% fig1 = figure(1);
+% clf('reset');
+% opts_1 = odeset('Stats','on','OutputFcn',@odeplot);
 opts_2 = odeset('RelTol',1e-3,'AbsTol',1e-5);
 opts_3 = odeset('NonNegative',[1,2]);
 % opts_4 = odeset('Mass',@MassMatrixFcn,'MStateDependence','strong');
 
-opts = odeset(opts_1,opts_2,opts_3);
+opts = odeset(opts_2,opts_3);
 % opts = odeset(opts_1,opts_2,opts_3,opts_4); 
 
 q0 = [0 0 0 0 0 0 ]';   
@@ -79,8 +91,8 @@ c2p = animatedline('Marker','o','Color','blue');
 c3p = animatedline('Marker','o','Color','blue');
 axis equal;
 
-
-for i=1:numel(q(:,1))-1
+last = numel(q(:,1));
+for i=1:last-1
 
     addpoints(h, 0, 0);
     addpoints(h, X1(i), Y1(i));
@@ -105,8 +117,6 @@ for i=1:numel(q(:,1))-1
     clearpoints(c3p);
     clearpoints(h);
 end
-
-last = numel(q(:,1));
 addpoints(h, 0, 0);
 addpoints(h, X1(last), Y1(last));
 addpoints(h, X2(last), Y2(last));
@@ -118,68 +128,65 @@ function dx = sys(t,x)
     % Non-linear state-space formulation
     % Generic
     global m1 m2 m3 L1 L2 L3 g
-    global tau1p tau2p tau3p q1p q2p q3p q1dp q2dp q3dp
+    global tau1p tau2p tau3p q1p q2p q3p q1dp q2dp q3dp fr1p fr2p fr3p
     
+    q = [x(1); x(2); x(3) ];
     qdot = [x(4); x(5); x(6)];
     
-    matrixM = M(t, g, x(1),x(2),x(3),m1,m2,m3,L1,L2,L3);
-    invM = inv(M(t, g, x(1),x(2),x(3),m1,m2,m3,L1,L2,L3));
-%     vecV = V(t,x(1),x(2),x(3),x(4),x(5),x(6),m1,m2,m3,L1,L2,L3);
-    vecN = N(t,g,x(1),x(2),x(3),x(4),x(5),x(6),m1,m2,m3,L1,L2,L3);
-    vecG = G(t, g, x(1),x(2),x(3),m1,m2,m3,L1,L2,L3);
-%     Jtranspose = transpose(J(t,x(1),x(2),x(3),L1,L2,L3));
+    matM = M(t, g, x(1),x(2),x(3),m1,m2,m3,L1,L2,L3);
+    vecV = V(t,x(1),x(2),x(3),x(4),x(5),x(6),m1,m2,m3,L1,L2,L3);
     vecF = F(qdot);
+    vecG = G(t, g, x(1),x(2),x(3),m1,m2,m3,L1,L2,L3);
+    vecN = vecV + vecG + vecF;
+    
+    tau_d = transpose(J(t,x(1),x(2),x(3),L1,L2,L3))*[0; 0];
 
+    % Desired trajectory in joint space
+    q_d = [ pi/6*(1-cos(t));   
+           2*pi/6*(1-cos(t));       
+            pi/6*(1-cos(t)) ];
     
-
-    q1dotd = 0; 
-    q2dotd = 0; 
-    q3dotd = 0;    
+    qdot_d = [0; 0; 0];    
+        
+    % Error
+    e = q_d - q;
+    edot = qdot_d - qdot;
     
-    q1d = pi/8*(1-cos(t));
-    q2d = pi/4*(1-cos(t));  
-    q3d = pi/8*(1-cos(t));
-    
-    e = [ q1d - x(1);
-          q2d - x(2);
-          q3d - x(3) ];
-    
-    e_dot = [ q1dotd - x(4);
-              q2dotd - x(5);
-              q3dotd - x(6) ];
-          
+    % PID config
     w = 100;
     Kp = diag([w^2 w^2 w^2]);
     Kv = diag([2*w 2*w 2*w]);
           
-    tau = matrixM*(Kp*e + Kv*e_dot) + vecN;
-%     tau = Kp*e + Kv*e_dot + vectorG;
+    tau = matM*(Kp*e + Kv*edot) + vecN;         % CTC
+%     tau = Kp*e + Kv*e_dot + vecG;               % PD-plus-Gravity
 %     tau = [0; 0; 0];
 
+    % Saturation limit
     TAU_MAX = 500;
+    tau(1) = constrain(tau(1),-TAU_MAX,TAU_MAX);
+    tau(2) = constrain(tau(2),-TAU_MAX,TAU_MAX);
+    tau(3) = constrain(tau(3),-TAU_MAX,TAU_MAX);
     
-%     tau(1) = constrain(tau(1),-TAU_MAX,TAU_MAX);
-%     tau(2) = constrain(tau(2),-TAU_MAX,TAU_MAX);
-%     tau(3) = constrain(tau(3),-TAU_MAX,TAU_MAX);
-    
+
+    dx = [ x(4); x(5); x(6); -matM \ vecN] + [zeros(3,1); matM \ tau]+ [zeros(3,1); -matM \ tau_d];
+
+                                 
     addpoints(tau1p, t,tau(1));
     addpoints(tau2p, t,tau(2));
     addpoints(tau3p, t,tau(3));
- 
+    
+    addpoints(fr1p, t, vecF(1));
+    addpoints(fr2p, t, vecF(2));
+    addpoints(fr3p,  t, vecF(3));
         
     addpoints(q1p, t, x(1));
     addpoints(q2p, t, x(2));
     addpoints(q3p, t, x(3));
     
-    addpoints(q1dp, t, q1d);
-    addpoints(q2dp, t, q2d);
-    addpoints(q3dp, t, q3d);
-    
-    
-%     dx = [ x(4); x(5); x(6); -invM*(vecV+vecG)] + [zeros(3); invM]*tau;
-    dx = [ x(4); x(5); x(6); -invM*(vecN+vecF)] + [zeros(3); invM]*tau;
-%     dx = [ x(4); x(5); x(6); -vecN] + [zeros(3,1); tau];
-                                 
+    addpoints(q1dp, t, q_d(1));
+    addpoints(q2dp, t, q_d(2));
+    addpoints(q3dp, t, q_d(3));
+
 end
 
 
