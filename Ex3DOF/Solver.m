@@ -50,10 +50,11 @@ opts_3 = odeset('NonNegative',[1,2]);
 opts = odeset(opts_1,opts_2,opts_3);
 % opts = odeset(opts_1,opts_2,opts_3,opts_4); 
 
-q0 = [pi/4 0 0 0 0 0 ]';   
+q0 = [0 0 0 0 0 0 ]';   
 tic; 
-tspan = 0:0.01:60;
+tspan = 0:0.01:10;
 [t, q] = ode23s(@sys, tspan, q0,opts);
+% [t, q] = ode45(@sys, tspan, q0,opts);
 % q = ode4(@sys, tspan, q0);
 toc;
 %%
@@ -119,12 +120,18 @@ function dx = sys(t,x)
     global m1 m2 m3 L1 L2 L3 g
     global tau1p tau2p tau3p q1p q2p q3p q1dp q2dp q3dp
     
+    qdot = [x(4); x(5); x(6)];
+    
     matrixM = M(t, g, x(1),x(2),x(3),m1,m2,m3,L1,L2,L3);
     invM = inv(M(t, g, x(1),x(2),x(3),m1,m2,m3,L1,L2,L3));
-    vectorN = N(t,g,x(1),x(2),x(3),x(4),x(5),x(6),m1,m2,m3,L1,L2,L3);
+%     vecV = V(t,x(1),x(2),x(3),x(4),x(5),x(6),m1,m2,m3,L1,L2,L3);
+    vecN = N(t,g,x(1),x(2),x(3),x(4),x(5),x(6),m1,m2,m3,L1,L2,L3);
+    vecG = G(t, g, x(1),x(2),x(3),m1,m2,m3,L1,L2,L3);
 %     Jtranspose = transpose(J(t,x(1),x(2),x(3),L1,L2,L3));
-    vectorG = G(t, g, x(1),x(2),x(3),m1,m2,m3,L1,L2,L3);
+    vecF = F(qdot);
+
     
+
     q1dotd = 0; 
     q2dotd = 0; 
     q3dotd = 0;    
@@ -141,15 +148,15 @@ function dx = sys(t,x)
               q2dotd - x(5);
               q3dotd - x(6) ];
           
-    w = 10;
+    w = 100;
     Kp = diag([w^2 w^2 w^2]);
     Kv = diag([2*w 2*w 2*w]);
           
-%     tau = matrixM*(Kp*e + Kv*e_dot) + vectorN;
+    tau = matrixM*(Kp*e + Kv*e_dot) + vecN;
 %     tau = Kp*e + Kv*e_dot + vectorG;
-    tau = [0; 0; 0];
+%     tau = [0; 0; 0];
 
-    TAU_MAX = 200;
+    TAU_MAX = 500;
     
 %     tau(1) = constrain(tau(1),-TAU_MAX,TAU_MAX);
 %     tau(2) = constrain(tau(2),-TAU_MAX,TAU_MAX);
@@ -169,8 +176,9 @@ function dx = sys(t,x)
     addpoints(q3dp, t, q3d);
     
     
-    dx = [ x(4); x(5); x(6); -invM*vectorN] + [zeros(3); invM]*tau;
-%     dx = [ x(4); x(5); x(6); -vectorN] + [zeros(3,1); tau];
+%     dx = [ x(4); x(5); x(6); -invM*(vecV+vecG)] + [zeros(3); invM]*tau;
+    dx = [ x(4); x(5); x(6); -invM*(vecN+vecF)] + [zeros(3); invM]*tau;
+%     dx = [ x(4); x(5); x(6); -vecN] + [zeros(3,1); tau];
                                  
 end
 

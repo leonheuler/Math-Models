@@ -91,9 +91,9 @@ dLq3 = diff(L, q3);
 
 % w = 10;
 
-eq1 = dLq1dotdt - dLq1 + F(q1dot);% - w^2*(pi/12 - q1) - 2*w*(0-q1dot);
-eq2 = dLq2dotdt - dLq2 + F(q2dot);% - w^2*(0 - q2) - 2*w*(0-q2dot);
-eq3 = dLq3dotdt - dLq3 + F(q3dot);% - w^2*(0 - q3) - 2*w*(0-q3dot);
+eq1 = dLq1dotdt - dLq1;% - w^2*(pi/12 - q1) - 2*w*(0-q1dot);
+eq2 = dLq2dotdt - dLq2;% - w^2*(0 - q2) - 2*w*(0-q2dot);
+eq3 = dLq3dotdt - dLq3;% - w^2*(0 - q3) - 2*w*(0-q3dot);
 
 fprintf('Simplifying diff. equations...');
 eq1 = simplify(eq1);
@@ -152,10 +152,6 @@ G3 = diff(subs(P,[phi1 phi2 phi3], [q1 q2 q3]),q3);
 G = [ G1; G2; G3 ];
 fprintf('Completed\n');
 
-% Calculate V vector
-% fprintf('Calculating vector V...');
-% V = simplify(N - G);
-% fprintf('Completed\n');
 
 if (simulation == 0)
     fprintf('Generating functions...');
