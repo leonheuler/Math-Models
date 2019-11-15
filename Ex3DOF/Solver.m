@@ -57,7 +57,7 @@ q3dp = animatedline('Color','red');
 grid on; legend('q3','q3_d');
 
 fig5 = figure(5);
-clf('reset');
+clf('reset'); title('Friction moments');
 global fr1p fr2p fr3p
 subplot(3,1,1);
 fr1p = animatedline(); grid on;
@@ -91,7 +91,7 @@ opts = odeset(opts_2,opts_3);
 
 q0 = [0 0 0 0 0 0 ]';   
 tic; 
-tspan = 0:0.01:10;
+tspan = 0:0.01:20;
 [t, q] = ode23s(@sys, tspan, q0,opts);
 % [t, q] = ode45(@sys, tspan, q0,opts);
 % q = ode4(@sys, tspan, q0);
