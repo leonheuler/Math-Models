@@ -1,6 +1,23 @@
 clear all
 %% Parameters
 global m1 m2 m3 L1 L2 L3 g
+global Km Kb Ra Bm r
+
+% maxon 496660
+Km = 37.5e-3;
+Kb = 255*(2*pi/60); 
+Ra = 0.236;     % Om
+Bm = 0.0;    
+Im = 0.0000044;  % kg*m^2
+
+% maxon 223095
+r = 113;
+Ir = 0.00000093; % kg*m^2
+
+Jm = diag(ones(3,1)*(Im+Ir));
+B = diag(ones(3,1)*(Bm + Kb*Km/Ra));
+R = diag(ones(1,3)*r);
+K = diag(ones(1,3)*(Km/Ra));
 
 m = 70;
 H = 1.7;
@@ -48,6 +65,16 @@ subplot(3,1,2);
 fr2p = animatedline(); grid on;
 subplot(3,1,3);
 fr3p = animatedline(); grid on;
+
+fig6 = figure(6);
+clf('reset');
+global u1p u2p u3p
+subplot(3,1,1);
+u1p = animatedline(); grid on;
+subplot(3,1,2);
+u2p = animatedline(); grid on;
+subplot(3,1,3);
+u3p = animatedline(); grid on;
 
 
 
@@ -129,6 +156,7 @@ function dx = sys(t,x)
     % Generic
     global m1 m2 m3 L1 L2 L3 g
     global tau1p tau2p tau3p q1p q2p q3p q1dp q2dp q3dp fr1p fr2p fr3p
+    global u1p u2p u3p
     
     q = [x(1); x(2); x(3) ];
     qdot = [x(4); x(5); x(6)];
@@ -160,6 +188,9 @@ function dx = sys(t,x)
     tau = matM*(Kp*e + Kv*edot) + vecN;         % CTC
 %     tau = Kp*e + Kv*e_dot + vecG;               % PD-plus-Gravity
 %     tau = [0; 0; 0];
+    
+    
+    
 
     % Saturation limit
     TAU_MAX = 500;
@@ -186,7 +217,9 @@ function dx = sys(t,x)
     addpoints(q1dp, t, q_d(1));
     addpoints(q2dp, t, q_d(2));
     addpoints(q3dp, t, q_d(3));
-
+    
+%     addpoints(u1p, t, 
+    
 end
 
 
