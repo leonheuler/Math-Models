@@ -14,12 +14,12 @@ y2 = L1*cos(phi1) + L2*cos(-phi2+phi1);
 x3 = L1*sin(phi1) + L2*sin(-phi2+phi1) + L3*sin(phi3-phi2+phi1);
 y3 = L1*cos(phi1) + L2*cos(-phi2+phi1) + L3*cos(phi3-phi2+phi1);
 
-c1x =  x1/2; 
-c1y =  y1/2; 
-c2x =  (x1+x2)/2; 
-c2y =  (y1+y2)/2;
-c3x =  (x2+x3)/2; 
-c3y =  (y2+y3)/2;
+c1x = x1/2; 
+c1y = y1/2; 
+c2x = (x1+x2)/2; 
+c2y = (y1+y2)/2;
+c3x = (x2+x3)/2; 
+c3y = (y2+y3)/2;
 
 x1 = c1x; y1 = c1y;
 x2 = c2x; y2 = c2y;
