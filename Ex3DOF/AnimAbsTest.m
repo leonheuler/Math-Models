@@ -2,7 +2,7 @@
 % Animation
 fig2 = figure(2);
 clf('reset');
-h = animatedline('Marker','o','LineWidth',1.5);
+exo = animatedline('Marker','o','LineWidth',1.5);
 tr = animatedline();
 cp = animatedline('Marker','o','MarkerSize',1,'Color','red');
 c1p = animatedline('Marker','o','Color','blue');
@@ -10,14 +10,15 @@ c2p = animatedline('Marker','o','Color','blue');
 c3p = animatedline('Marker','o','Color','blue');
 axis equal;
 
+human = animatedline('Marker','o','LineWidth',1.5);
 
 last = numel(q(:,1));
 for i=1:last-1
 
-    addpoints(h, 0, 0);
-    addpoints(h, X1(i), Y1(i));
-    addpoints(h, X2(i), Y2(i));
-    addpoints(h, X3(i), Y3(i));
+    addpoints(exo, 0, 0);
+    addpoints(exo, X1(i), Y1(i));
+    addpoints(exo, X2(i), Y2(i));
+    addpoints(exo, X3(i), Y3(i));
     addpoints(tr, X3(i), Y3(i));
     
     rC1 = [X1(i)/2;Y1(i)/2];
@@ -35,10 +36,10 @@ for i=1:last-1
     clearpoints(c1p);
     clearpoints(c2p);
     clearpoints(c3p);
-    clearpoints(h);
+    clearpoints(exo);
 end
-addpoints(h, 0, 0);
-addpoints(h, X1(last), Y1(last));
-addpoints(h, X2(last), Y2(last));
-addpoints(h, X3(last), Y3(last));
+addpoints(exo, 0, 0);
+addpoints(exo, X1(last), Y1(last));
+addpoints(exo, X2(last), Y2(last));
+addpoints(exo, X3(last), Y3(last));
 
