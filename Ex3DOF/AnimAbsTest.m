@@ -12,7 +12,7 @@ axis equal;
 
 human = animatedline('Marker','o','LineWidth',1.5);
 
-last = numel(q(:,1));
+last = numel(eO2x);
 for i=1:last-1
 
     addpoints(exo, 0, 0);

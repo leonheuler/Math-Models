@@ -1,52 +1,4 @@
-%% Plots
-fig3 = figure(3);
-clf('reset');
-global tau1p tau2p tau3p
-tau1p = animatedline('Color','red');
-tau2p = animatedline('Color','blue');
-tau3p = animatedline('Color','black');
-legend('tau1','tau2','tau3'); grid on;
-
-fig4 = figure(4); clf('reset');
-clf('reset');
-global q1p q2p q3p q1hp q2hp q3hp
-subplot(3,1,1);
-q1p = animatedline('Color','blue');
-q1hp = animatedline('Color','red');
-grid on; legend('q1','q1_d');
-subplot(3,1,2);
-q2p = animatedline('Color','blue');
-q2hp = animatedline('Color','red');
-grid on; legend('q2','q2_d');
-subplot(3,1,3);
-q3p = animatedline('Color','blue');
-q3hp = animatedline('Color','red');
-grid on; legend('q3','q3_d');
-
-fig5 = figure(5); 
-clf('reset');
-global Hp HJp Tp
-Hp = animatedline('Color','red');
-HJp = animatedline('Color','blue');
-Tp = animatedline('Color','black');
-legend('H','HJ','T'); grid on;
-
-fig6 = figure(6); 
-clf('reset');
-global humanp exop
-humanp = animatedline('Marker','o','LineWidth',1.5);
-exop = animatedline('Marker','o','LineWidth',0.5,'Color','red');
-axis equal;
-
-fig7 = figure(7);
-clf('reset');
-global gammaHp gammaHJp gammaTp
-gammaHp = animatedline('Color','red');
-gammaHJp = animatedline('Color','blue');
-gammaTp = animatedline('Color','black');
-legend('gammaH','gammaHJ','gammaT'); grid on;
-
-% Model
+%% Model config
 global m1 m2 m3 L1 L2 L3 g Lh Lt Ch Chj Ct
 
 m = 70;
@@ -68,122 +20,212 @@ Ch = 10000;
 Ct = 10000;
 Chj = 10000;
 
+%% Simulation config
 q0 = [pi/2-0.001 pi/2+0.0001 pi/2-0.001 0 0 0 ].'; % initial conditions
-tspan = 0:0.01:2*pi; % simulation time
+tbeg = 0;
+tend = pi/2;
+dt = 0.01;
+tspan = tbeg:dt:tend; 
+maxit = ceil((tend - tbeg) / dt);
 
-% plot state variables 
-fig1 = figure(1);
-clf('reset');
-opts = odeset('OutputFcn',@odeplot); 
-
-[t,q] = ode23s(@sys, tspan, q0, opts);
-% q = ode4(@sys,tspan,q0);
-
-X1 = L1*cos(q(:,1));
-Y1 = L1*sin(q(:,1));
-X2 = L1*cos(q(:,1)) + L2*cos(q(:,2));
-Y2 = L1*sin(q(:,1)) + L2*sin(q(:,2));
-X3 = L1*cos(q(:,1)) + L2*cos(q(:,2)) + L3*cos(q(:,3));
-Y3 = L1*sin(q(:,1)) + L2*sin(q(:,2)) + L3*sin(q(:,3));
-
-
-%%
-% Animation
+%% Simdata config
 fig2 = figure(2);
 clf('reset');
-h = animatedline('Marker','o','LineWidth',1.5);
+global tau1p tau2p tau3p
+tau1p = animatedline('Color','r');
+tau2p = animatedline('Color','g');
+tau3p = animatedline('Color','b');
+
+fig3 = figure(3);
+clf('reset');
+global hq1p hq2p hq3p eq1p eq2p eq3p
+subplot(3,1,1);
+hq1p = animatedline('Color','r'); hold on;
+eq1p = animatedline('Color','b');
+subplot(3,1,2);
+hq2p = animatedline('Color','r'); hold on;
+eq2p = animatedline('Color','b');
+subplot(3,1,3);
+hq3p = animatedline('Color','r'); hold on;
+eq3p = animatedline('Color','b');
+
+fig4 = figure(4);
+clf('reset');
+global Hp HJp Tp gammaHp gammaHJp gammaTp
+subplot(3,2,1);
+Hp =  animatedline();
+subplot(3,2,2);
+gammaHp = animatedline();
+subplot(3,2,3);
+HJp = animatedline();
+subplot(3,2,4);
+gammaHJp = animatedline();
+subplot(3,2,5);
+Tp =  animatedline();
+subplot(3,2,6);
+gammaTp =  animatedline();
+
+%% Solver config
+opts = odeset('OutputFcn',@odeplot); 
+
+fig5 = figure(5);
+clf(fig5,'reset');
+
+%% Simlation 
+tic;
+[t,q] = ode23s(@sys, tspan, q0, opts);
+% q = ode4(@sys,tspan,q0);
+toc;
+
+%% Collect data from plots 
+[~, eq1] = getpoints(eq1p);
+[~, eq2] = getpoints(eq2p);
+[~, eq3] = getpoints(eq3p);
+
+[~, hq1] = getpoints(hq1p);
+[~, hq2] = getpoints(hq2p);
+[~, hq3] = getpoints(hq3p);
+
+eO2x = L1*cos(eq1);
+eO2y = L1*sin(eq1);
+eO3x = L1*cos(eq1) + L2*cos(eq2);
+eO3y = L1*sin(eq1) + L2*sin(eq2);
+eO4x = L1*cos(eq1) + L2*cos(eq2) + L3*cos(eq3);
+eO4y = L1*sin(eq1) + L2*sin(eq2) + L3*sin(eq3);
+
+hO2x = L1*cos(hq1);
+hO2y = L1*sin(hq1);
+hO3x = L1*cos(hq1) + L2*cos(hq2);
+hO3y = L1*sin(hq1) + L2*sin(hq2);
+hO4x = L1*cos(hq1) + L2*cos(hq2) + L3*cos(hq3);
+hO4y = L1*sin(hq1) + L2*sin(hq2) + L3*sin(hq3);
+
+%% Animation
+fig6 = figure(6);
+clf('reset');
+human = animatedline('Marker','o','MarkerSize',15, 'MarkerFaceColor', 'black', ...
+                    'LineWidth',16, 'Color', 'black');
+                
+exo =   animatedline('Marker','o','MarkerSize',4, ...
+                    'LineWidth',4, 'Color', 'yellow');
+
 tr = animatedline();
-cp = animatedline('Marker','o','MarkerSize',1,'Color','red');
-c1p = animatedline('Marker','o','Color','blue');
-c2p = animatedline('Marker','o','Color','blue');
-c3p = animatedline('Marker','o','Color','blue');
+ecp = animatedline('Marker','o','MarkerSize',2,'Color','red');
+ec1p = animatedline('Marker','o','MarkerSize',3,'Color','blue');
+ec2p = animatedline('Marker','o','MarkerSize',3,'Color','blue');
+ec3p = animatedline('Marker','o','MarkerSize',3,'Color','blue');
+
 axis equal;
 
 
-last = numel(q(:,1));
+last = numel(eO2x);
 for i=1:last-1
 
-    addpoints(h, 0, 0);
-    addpoints(h, X1(i), Y1(i));
-    addpoints(h, X2(i), Y2(i));
-    addpoints(h, X3(i), Y3(i));
-    addpoints(tr, X3(i), Y3(i));
+    addpoints(exo, 0, 0);
+    addpoints(exo, eO2x(i), eO2y(i));
+    addpoints(exo, eO3x(i), eO3y(i));
+    addpoints(exo, eO4x(i), eO4y(i));
+    addpoints(tr,eO4x(i), eO4y(i));
     
-    rC1 = [X1(i)/2;Y1(i)/2];
-    rC2 = [(X1(i)+X2(i))/2; (Y1(i)+Y2(i))/2];
-    rC3 = [(X2(i)+X3(i))/2; (Y2(i)+Y3(i))/2];
-    rC = (m1*[X1(i)/2;Y1(i)/2] + m2*[(X2(i)+X1(i))/2;(Y2(i)+Y1(i))/2] + m3*[(X2(i)+X3(i))/2;(Y3(i)+Y2(i))/2]) / (m1 + m2 + m3);
+    addpoints(human, 0, 0);
+    addpoints(human, hO2x(i), hO2y(i));
+    addpoints(human, hO3x(i), hO3y(i));
+    addpoints(human, hO4x(i), hO4y(i));
+  
+    eC1 = [eO2x(i)/2; 
+           eO2y(i)/2];
+
+    eC2 = [(eO2x(i)+eO3x(i))/2; 
+           (eO2y(i)+eO3y(i))/2 ];
+
+    eC3 = [(eO3x(i)+eO4x(i))/2; 
+           (eO3y(i)+eO4y(i))/2 ];
+           
+    eC = (m1*eC1 + m2*eC2 + m3*eC3) / (m1 + m2 + m3);
     
-    addpoints(c1p, rC1(1), rC1(2));
-    addpoints(c2p, rC2(1), rC2(2));
-    addpoints(c3p, rC3(1), rC3(2));
-    addpoints(cp, rC(1), rC(2));
+    addpoints(ec1p, eC1(1), eC1(2));
+    addpoints(ec2p, eC2(1), eC2(2));
+    addpoints(ec3p, eC3(1), eC3(2));
+    addpoints(ecp,  eC(1), eC(2));
     
     drawnow limitrate;
     
-    clearpoints(c1p);
-    clearpoints(c2p);
-    clearpoints(c3p);
-    clearpoints(h);
+    clearpoints(ec1p);
+    clearpoints(ec2p);
+    clearpoints(ec3p);
+    clearpoints(human);
+    clearpoints(exo);
 end
-addpoints(h, 0, 0);
-addpoints(h, X1(last), Y1(last));
-addpoints(h, X2(last), Y2(last));
-addpoints(h, X3(last), Y3(last));
 
+addpoints(exo, 0, 0);
+addpoints(exo, eO2x(last), eO2y(last));
+addpoints(exo, eO3x(last), eO3y(last));
+addpoints(exo, eO4x(last), eO4y(last));
+addpoints(tr,eO4x(last), eO4y(last));
 
+addpoints(human, 0, 0);
+addpoints(human, hO2x(last), hO2y(last));
+addpoints(human, hO3x(last), hO3y(last));
+addpoints(human, hO4x(last), hO4y(last));
+
+addpoints(ec1p, eC1(1), eC1(2));
+addpoints(ec2p, eC2(1), eC2(2));
+addpoints(ec3p, eC3(1), eC3(2));
+addpoints(ecp,  eC(1), eC(2));
 
 %% ODE system in non-linear state-space representation
 function dx = sys(t,x)
-    
-    % Non-linear state-space formulation
-    % Generic
 
-    global tau1p tau2p tau3p q1p q2p q3p q1hp q2hp q3hp Hp HJp Tp
-    global L1 L2 L3 Lh Lt Ch Ct Chj
-    global exop humanp
+    global m1 m2 m3 L1 L2 L3 g Lh Lt Ch Chj Ct
+    global tau1p tau2p tau3p
+    global hq1p hq2p hq3p
+    global eq1p eq2p eq3p
+    global Hp HJp Tp
     global gammaHp gammaHJp gammaTp
-    
+
+    % State-space variables
     q = [x(1); x(2); x(3) ];
     qdot = [x(4); x(5); x(6)];
 
-    
-    % Desired trajectory in joint space
+    % Human trajectory in joint space
     q_h = [ pi/2 - pi/8*(1-cos(t));   
            pi/2 + 2*pi/8*(1-cos(t));       
             pi/2 - pi/8*(1-cos(t)) ];
+        
+    % Human points of contact  
+    hH = [ L1*cos(q_h(1))+Lh*cos(q_h(2));
+             L1*sin(q_h(1))+Lh*sin(q_h(2)) ];
+        
+    hHJ = [ L1*cos(q_h(1))+L2*cos(q_h(2));
+              L1*sin(q_h(1))+L2*sin(q_h(2)) ];   
+          
+    hT = [ L1*cos(q_h(1))+L2*cos(q_h(2)) + Lt*cos(q_h(3));
+             L1*sin(q_h(1))+L2*sin(q_h(2)) + Lt*sin(q_h(3))];  
     
-    rH = [ L1*cos(q(1))+Lh*cos(q(2));
+    % corresponding exo points
+    eH = [ L1*cos(q(1))+Lh*cos(q(2));
            L1*sin(q(1))+Lh*sin(q(2)) ];
     
-    rH_h = [ L1*cos(q_h(1))+Lh*cos(q_h(2));
-           L1*sin(q_h(1))+Lh*sin(q_h(2)) ]; 
+    eHJ = [ L1*cos(q(1))+L2*cos(q(2));
+            L1*sin(q(1))+L2*sin(q(2)) ];
        
-    rHJ = [ L1*cos(q(1))+L2*cos(q(2));
-           L1*sin(q(1))+L2*sin(q(2)) ];
-       
-    rHJ_h = [ L1*cos(q_h(1))+L2*cos(q_h(2));
-           L1*sin(q_h(1))+L2*sin(q_h(2)) ];       
-       
-    rT = [ L1*cos(q(1))+L2*cos(q(2)) + Lt*cos(q(3));
+    eT = [ L1*cos(q(1))+L2*cos(q(2)) + Lt*cos(q(3));
            L1*sin(q(1))+L2*sin(q(2)) + Lt*sin(q(3))];   
        
-    rT_h = [ L1*cos(q_h(1))+L2*cos(q_h(2)) + Lt*cos(q_h(3));
-           L1*sin(q_h(1))+L2*sin(q_h(2)) + Lt*sin(q_h(3))];   
-       
-    H = Ch*(rH_h-rH);
-    HJ = Chj*(rHJ_h - rHJ);
-    T  = Ct*(rT_h - rT);
+    % Reaction forces
+    H = Ch*(hH-eH);
+    HJ = Chj*(hHJ - eHJ);
+    T  = Ct*(hT - eT);
     
+    % Their magnitudes
     Tnorm = norm(T);
     Hnorm = norm(H);
     HJnorm = norm(HJ);
     
+    % Reaction forces absolute angles
     gammaT = acos(T(1)/Tnorm);
     gammaH = acos(H(1)/Hnorm);
-    gammaHJ = acos(HJ(1)/HJnorm);
-    
-%     qdot_d = [0 0 0].';    
+    gammaHJ = acos(HJ(1)/HJnorm); 
     
     tau_d = [0 0 0].';
     
@@ -191,8 +233,10 @@ function dx = sys(t,x)
                 Tnorm*L2*sin(gammaT+q_h(2)) + HJnorm*L2*sin(gammaHJ+q_h(2)) + Hnorm*Lh*sin(gammaH+q_h(2));
                 Tnorm*Lt*sin(gammaT+q_h(3)) ];
      tau_ext = - tau_ext;       
+     
 %     tau_ext = [ 0 0 0 ].';
-    % Error
+
+    % Errors
 %     e = q_d - q;
 %     edot = qdot_d - qdot;
     
@@ -200,60 +244,39 @@ function dx = sys(t,x)
 %     w = 100;
 %     Kp = diag([w^2 w^2 w^2]);
 %     Kv = diag([2*w 2*w 2*w]);
-          
-%     tau = M(q)*(Kp*e + Kv*edot) + N(q,qdot);         % CTC
-%     tau = G(q);
 
+    % Control law
+%     tau = M(q)*(Kp*e + Kv*edot) + N(q,qdot);         % CTC
 %     tau = Kp*e + Kv*e_dot + vecG;               % PD-plus-Gravity
+%     tau = G(q);
     tau = [0; 0; 0];
     
+    % state-space representation
     dx = [ x(4); x(5); x(6); -M(q) \ N(q,qdot)] + [zeros(3,1); M(q) \ (tau + tau_ext)]+ [zeros(3,1); -M(q) \ tau_d];
-%     dx = [ x(4); x(5); x(6); lsqminnorm(-M(q),N(q,qdot))] + [zeros(3,1); lsqminnorm(M(q),(tau + tau_ext))];
+%     dx = [ x(4); x(5); x(6); lsqminnorm(-M(q),N(q,qdot))] + [zeros(3,1); lsqminnorm(M(q),(tau + tau_ext))] + [zeros(3,1); lsqminnorm(-M(q),tau_d)];
     
-    
-    addpoints(tau1p, t,tau(1));
-    addpoints(tau2p, t,tau(2));
-    addpoints(tau3p, t,tau(3));
-    
-    addpoints(q1p, t, x(1));
-    addpoints(q2p, t, x(2));
-    addpoints(q3p, t, x(3));
 
-    addpoints(gammaTp, t, gammaT);
-    addpoints(gammaHp, t, gammaH);
+    addpoints(hq1p, t, q_h(1));
+    addpoints(hq2p, t, q_h(2));
+    addpoints(hq3p, t, q_h(3));
+ 
+    addpoints(eq1p, t, q(1));
+    addpoints(eq2p, t, q(2));
+    addpoints(eq3p, t, q(3));
+
+    addpoints(Hp , t,  Hnorm);
+    addpoints(HJp, t, HJnorm);
+    addpoints(Tp , t,  Tnorm);
+    
+    addpoints(gammaTp,  t,  gammaT);
+    addpoints(gammaHp,  t,  gammaH);
     addpoints(gammaHJp, t, gammaHJ);
-    
-    addpoints(q1hp, t, q_h(1));
-    addpoints(q2hp, t, q_h(2));
-    addpoints(q3hp, t, q_h(3));
-    
-    addpoints(Hp, t, norm(H));
-    addpoints(HJp, t, norm(HJ));
-    addpoints(Tp, t, norm(T));
-    
-    rK = [ L1*cos(q(1)) L1*sin(q(1)) ].';
-    rK_h = [ L1*cos(q_h(1)) L1*sin(q_h(1)) ].';
-    
-    rE = [ L1*cos(q(1))+L2*cos(q(2)) + L3*cos(q(3));
-           L1*sin(q(1))+L2*sin(q(2)) + L3*sin(q(3))]; 
-       
-    rE_h = [ L1*cos(q_h(1))+L2*cos(q_h(2)) + L3*cos(q_h(3));
-           L1*sin(q_h(1))+L2*sin(q_h(2)) + L3*sin(q_h(3))]; 
-    
-    addpoints(humanp, 0,0); 
-    addpoints(humanp, rK(1), rK(2));
-    addpoints(humanp, rH(1), rH(2));
-    addpoints(humanp, rE(1), rE(2));
-    
-    addpoints(exop, 0,0); 
-    addpoints(exop, rK_h(1), rK_h(2));
-    addpoints(exop, rH_h(1), rH_h(2));
-    addpoints(exop, rE_h(1), rE_h(2));
-    
-    drawnow;
-    
-    clearpoints(humanp);
-    clearpoints(exop);
+
+    addpoints(tau1p, t, tau(1));
+    addpoints(tau2p, t, tau(2));
+    addpoints(tau3p, t, tau(3));
+
+    drawnow limitrate;
     
 end
 
