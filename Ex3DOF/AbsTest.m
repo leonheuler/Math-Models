@@ -21,7 +21,7 @@ Ct = 10000;
 Chj = 10000;
 
 %% Simulation config
-q0 = [pi/2-0.001 pi/2+0.0001 pi/2-0.001 0 0 0 ].'; % initial conditions
+q0 = [pi/4 pi/2 -pi/4 0 0 0 ].'; % initial conditions
 tbeg = 0;
 tend = pi/2;
 dt = 0.01;
@@ -101,7 +101,7 @@ hO4x = L1*cos(hq1) + L2*cos(hq2) + L3*cos(hq3);
 hO4y = L1*sin(hq1) + L2*sin(hq2) + L3*sin(hq3);
 
 %% Animation
-fig6 = figure(6);
+figure(6);
 clf('reset');
 human = animatedline('Marker','o','MarkerSize',15, 'MarkerFaceColor', 'black', ...
                     'LineWidth',16, 'Color', 'black');
@@ -120,7 +120,7 @@ axis equal;
 
 last = numel(eO2x);
 for i=1:last-1
-
+    
     addpoints(exo, 0, 0);
     addpoints(exo, eO2x(i), eO2y(i));
     addpoints(exo, eO3x(i), eO3y(i));
@@ -131,7 +131,8 @@ for i=1:last-1
     addpoints(human, hO2x(i), hO2y(i));
     addpoints(human, hO3x(i), hO3y(i));
     addpoints(human, hO4x(i), hO4y(i));
-  
+    
+    
     eC1 = [eO2x(i)/2; 
            eO2y(i)/2];
 
@@ -146,9 +147,9 @@ for i=1:last-1
     addpoints(ec1p, eC1(1), eC1(2));
     addpoints(ec2p, eC2(1), eC2(2));
     addpoints(ec3p, eC3(1), eC3(2));
-    addpoints(ecp,  eC(1), eC(2));
+    addpoints(ecp,  eC(1), eC(2   ));
     
-    drawnow limitrate;
+    drawnow limitrate nocallbacks
     
     clearpoints(ec1p);
     clearpoints(ec2p);
@@ -229,11 +230,16 @@ function dx = sys(t,x)
     
     tau_d = [0 0 0].';
     
-    tau_ext = [ Tnorm*L1*sin(gammaT+q_h(1)) + HJnorm*L1*sin(gammaHJ+q_h(1)) + Hnorm*L1*sin(gammaH+q_h(1));
-                Tnorm*L2*sin(gammaT+q_h(2)) + HJnorm*L2*sin(gammaHJ+q_h(2)) + Hnorm*Lh*sin(gammaH+q_h(2));
-                Tnorm*Lt*sin(gammaT+q_h(3)) ];
-     tau_ext = - tau_ext;       
-     
+%     tau_ext = [ Tnorm*L1*sin(gammaT+q_h(1)) + HJnorm*L1*sin(gammaHJ+q_h(1)) + Hnorm*L1*sin(gammaH+q_h(1));
+%                 Tnorm*L2*sin(gammaT+q_h(2)) + HJnorm*L2*sin(gammaHJ+q_h(2)) + Hnorm*Lh*sin(gammaH+q_h(2));
+%                 Tnorm*Lt*sin(gammaT+q_h(3)) ];
+%      tau_ext = - tau_ext;  
+
+    tau_ext = [ Tnorm*L1*sin(gammaT-q_h(1)) - HJnorm*L1*sin(gammaHJ+q_h(1)) - Hnorm*L1*sin(gammaH-q_h(1));
+                Tnorm*L2*sin(gammaT-q_h(2)) - HJnorm*L2*sin(gammaHJ+q_h(2)) - Hnorm*Lh*sin(gammaH-q_h(2));
+                Tnorm*Lt*sin(gammaT-q_h(3)) ];
+       
+
 %     tau_ext = [ 0 0 0 ].';
 
     % Errors
@@ -252,8 +258,8 @@ function dx = sys(t,x)
     tau = [0; 0; 0];
     
     % state-space representation
-    dx = [ x(4); x(5); x(6); -M(q) \ N(q,qdot)] + [zeros(3,1); M(q) \ (tau + tau_ext)]+ [zeros(3,1); -M(q) \ tau_d];
-%     dx = [ x(4); x(5); x(6); lsqminnorm(-M(q),N(q,qdot))] + [zeros(3,1); lsqminnorm(M(q),(tau + tau_ext))] + [zeros(3,1); lsqminnorm(-M(q),tau_d)];
+%     dx = [ x(4); x(5); x(6); -M(q) \ N(q,qdot)] + [zeros(3,1); M(q) \ (tau + tau_ext)]+ [zeros(3,1); -M(q) \ tau_d];
+    dx = [ x(4); x(5); x(6); lsqminnorm(-M(q),N(q,qdot))] + [zeros(3,1); lsqminnorm(M(q),(tau + tau_ext))] + [zeros(3,1); lsqminnorm(-M(q),tau_d)];
     
 
     addpoints(hq1p, t, q_h(1));
@@ -276,7 +282,7 @@ function dx = sys(t,x)
     addpoints(tau2p, t, tau(2));
     addpoints(tau3p, t, tau(3));
 
-    drawnow limitrate;
+    drawnow limitrate nocallbacks;
     
 end
 
