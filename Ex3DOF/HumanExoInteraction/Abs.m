@@ -1,30 +1,34 @@
 %% Model config
-global m1 m2 m3 L1 L2 L3 g Lh Lt Ch Chj Ct
+global hm1 hm2 hm3 m1 m2 m3 L1 L2 L3 g Lh Lt Ch Chj Ct
 
 m = 70;
-H = 1.7;
+H = 1.8;
 L2 = 0.2450*H;
 L1 = 0.2460*H;
 L3 = H - (L1 + L2);
 
-Lh = 0.75*L2;
+Lh = 0.3*L2;
 Lt = 0.8*L3;
 
-m1 = 0.0475*m;
-m2 = 0.105*m;
-m3 = 0.551*m/2;
+hm1 = 0.0475*m;
+hm2 = 0.105*m;
+hm3 = 0.551*m/2;
+
+m1 = 8;
+m2 = 8;
+m3 = 8;
 
 g = 9.81;
 
-Ch = 10000;
-Ct = 10000;
-Chj = 10000;
+Ch =  1000;
+Ct =  1000;
+Chj = 1000;
 
 %% Simulation config
-q0 = [pi/4 pi/2 -pi/4 0 0 0 ].'; % initial conditions
+q0 = [pi/2-pi/6 pi/2+pi/4 pi/2-pi/6 0 0 0 ].'; % initial conditions
 tbeg = 0;
 tend = pi/2;
-dt = 0.01;
+dt = 0.005;
 tspan = tbeg:dt:tend; 
 maxit = ceil((tend - tbeg) / dt);
 
@@ -32,9 +36,12 @@ maxit = ceil((tend - tbeg) / dt);
 fig2 = figure(2);
 clf('reset');
 global tau1p tau2p tau3p
-tau1p = animatedline('Color','r');
-tau2p = animatedline('Color','g');
-tau3p = animatedline('Color','b');
+subplot(3,1,1);
+tau1p = animatedline('Color','k'); 
+subplot(3,1,2);
+tau2p = animatedline('Color','k');
+subplot(3,1,3);
+tau3p = animatedline('Color','k');
 
 fig3 = figure(3);
 clf('reset');
@@ -66,15 +73,16 @@ subplot(3,2,6);
 gammaTp =  animatedline();
 
 %% Solver config
+fig1 = figure(1);
+clf('reset');
 opts = odeset('OutputFcn',@odeplot); 
 
-fig5 = figure(5);
-clf(fig5,'reset');
+
 
 %% Simlation 
 tic;
-[t,q] = ode23s(@sys, tspan, q0, opts);
-% q = ode4(@sys,tspan,q0);
+% [t,q] = ode23s(@sys, tspan, q0, opts);
+q = ode4(@sys,tspan,q0);
 toc;
 
 %% Collect data from plots 
@@ -100,19 +108,47 @@ hO3y = L1*sin(hq1) + L2*sin(hq2);
 hO4x = L1*cos(hq1) + L2*cos(hq2) + L3*cos(hq3);
 hO4y = L1*sin(hq1) + L2*sin(hq2) + L3*sin(hq3);
 
+% Human points of contact  
+hHx =  L1*cos(hq1)+Lh*cos(hq2);
+hHy  = L1*sin(hq1)+Lh*sin(hq2) ;
+
+hHJx =  L1*cos(hq1)+L2*cos(hq2);
+hHJy =  L1*sin(hq1)+L2*sin(hq2) ;   
+
+hTx =  L1*cos(hq1)+L2*cos(hq2) + Lt*cos(hq3);
+hTy =  L1*sin(hq1)+L2*sin(hq2) + Lt*sin(hq3);  
+
+% corresponding exo points
+eHx = L1*cos(eq1)+Lh*cos(eq2);
+eHy =  L1*sin(eq1)+Lh*sin(eq2);
+
+eHJx = L1*cos(eq1)+L2*cos(eq2);
+eHJy = L1*sin(eq1)+L2*sin(eq2) ;
+
+eTx = L1*cos(eq1)+L2*cos(eq2) + Lt*cos(eq3);
+eTy =  L1*sin(eq1)+L2*sin(eq2) + Lt*sin(eq3);
+
 %% Animation
-figure(6);
+fig6 = figure(6);
 clf('reset');
-human = animatedline('Marker','o','Color', 'black');
+human = animatedline('Marker','o','Color', 'black','LineWidth',1.25); hold on;
                 
-exo =   animatedline('Marker','o','Color', 'blue');
+exo =   animatedline('Marker','o','Color', 'blue','LineWidth',1.25);
 
 tr = animatedline();
-ecp = animatedline('Marker','o','MarkerSize',2,'Color','red');
+ecp = animatedline('Marker','o','MarkerSize',2,'Color','blue');
+hcp = animatedline('Marker','o','MarkerSize',2,'Color','black');
 ec1p = animatedline('Marker','o','MarkerSize',3,'Color','blue');
 ec2p = animatedline('Marker','o','MarkerSize',3,'Color','blue');
 ec3p = animatedline('Marker','o','MarkerSize',3,'Color','blue');
 
+sprH = animatedline();
+sprHJ = animatedline();
+sprT = animatedline();
+
+foot = animatedline('Marker','o');
+
+box on;
 axis equal;
 
 
@@ -123,13 +159,19 @@ for i=1:last-1
     addpoints(exo, eO2x(i), eO2y(i));
     addpoints(exo, eO3x(i), eO3y(i));
     addpoints(exo, eO4x(i), eO4y(i));
-    addpoints(tr,eO4x(i), eO4y(i));
+    addpoints(tr,  eO4x(i), eO4y(i));
     
     addpoints(human, 0, 0);
     addpoints(human, hO2x(i), hO2y(i));
     addpoints(human, hO3x(i), hO3y(i));
     addpoints(human, hO4x(i), hO4y(i));
     
+    addpoints(sprH, hHx(i), hHy(i)); 
+    addpoints(sprH, eHx(i), eHy(i));
+    addpoints(sprHJ, hHJx(i), hHJy(i)); 
+    addpoints(sprHJ, eHJx(i), eHJy(i));
+    addpoints(sprT, hTx(i), hTy(i)); 
+    addpoints(sprT, eTx(i), eTy(i));   
     
     eC1 = [eO2x(i)/2; 
            eO2y(i)/2];
@@ -141,14 +183,32 @@ for i=1:last-1
            (eO3y(i)+eO4y(i))/2 ];
            
     eC = (m1*eC1 + m2*eC2 + m3*eC3) / (m1 + m2 + m3);
+ 
+    hC1 = [hO2x(i)/2; 
+           hO2y(i)/2];
+
+    hC2 = [(hO2x(i)+hO3x(i))/2; 
+           (hO2y(i)+hO3y(i))/2 ];
+
+    hC3 = [(hO3x(i)+hO4x(i))/2; 
+           (hO3y(i)+hO4y(i))/2 ];
+           
+    hC = (hm1*hC1 + hm2*hC2 + hm3*hC3) / (hm1 + hm2 + hm3);
     
     addpoints(ec1p, eC1(1), eC1(2));
     addpoints(ec2p, eC2(1), eC2(2));
     addpoints(ec3p, eC3(1), eC3(2));
     addpoints(ecp,  eC(1), eC(2));
+    addpoints(hcp,  hC(1), hC(2));
+    addpoints(foot, 0, 0);
+    addpoints(foot, 0.24, 0);
     
     drawnow limitrate nocallbacks
-    
+
+    clearpoints(foot);
+    clearpoints(sprH);
+    clearpoints(sprHJ);
+    clearpoints(sprT);
     clearpoints(ec1p);
     clearpoints(ec2p);
     clearpoints(ec3p);
@@ -160,18 +220,40 @@ addpoints(exo, 0, 0);
 addpoints(exo, eO2x(last), eO2y(last));
 addpoints(exo, eO3x(last), eO3y(last));
 addpoints(exo, eO4x(last), eO4y(last));
-addpoints(tr,eO4x(last), eO4y(last));
+addpoints(tr,  eO4x(last), eO4y(last));
 
 addpoints(human, 0, 0);
 addpoints(human, hO2x(last), hO2y(last));
 addpoints(human, hO3x(last), hO3y(last));
 addpoints(human, hO4x(last), hO4y(last));
 
+addpoints(sprH, hHx(last), hHy(last)); 
+addpoints(sprH, eHx(last), eHy(last));
+addpoints(sprHJ, hHJx(last), hHJy(last)); 
+addpoints(sprHJ, eHJx(last), eHJy(last));
+addpoints(sprT, hTx(last), hTy(last)); 
+addpoints(sprT, eTx(last), eTy(last));  
+
+eC1 = [eO2x(last)/2; 
+       eO2y(last)/2];
+
+eC2 = [(eO2x(last)+eO3x(last))/2; 
+       (eO2y(last)+eO3y(last))/2 ];
+
+eC3 = [(eO3x(last)+eO4x(last))/2; 
+       (eO3y(last)+eO4y(last))/2 ];
+
+eC = (m1*eC1 + m2*eC2 + m3*eC3) / (m1 + m2 + m3);
+
 addpoints(ec1p, eC1(1), eC1(2));
 addpoints(ec2p, eC2(1), eC2(2));
 addpoints(ec3p, eC3(1), eC3(2));
 addpoints(ecp,  eC(1), eC(2));
 
+addpoints(foot, 0, 0);
+addpoints(foot, 0.24, 0);
+
+drawnow;
 %% ODE system in non-linear state-space representation
 function dx = sys(t,x)
 
@@ -187,11 +269,15 @@ function dx = sys(t,x)
     qdot = [x(4); x(5); x(6)];
 
     % Human trajectory in joint space
-    q_h = [ pi/2 - pi/8*(1-cos(t));   
-           pi/2 + 2*pi/8*(1-cos(t));       
-            pi/2 - pi/8*(1-cos(t)) ];
-        
-    % Human points of contact  
+%     q_h = [ pi/2-pi/6*sin(t);   
+%             pi/2+pi/4*sin(t);       
+%             pi/2-pi/6*sin(t) ];
+
+    q_h = [ pi/2-pi/6*cos(t);   
+            pi/2+pi/4*cos(t);       
+            pi/2-pi/6*cos(t) ];
+
+        % Human points of contact  
     hH = [ L1*cos(q_h(1))+Lh*cos(q_h(2));
              L1*sin(q_h(1))+Lh*sin(q_h(2)) ];
         
@@ -226,17 +312,21 @@ function dx = sys(t,x)
     gammaH = acos(H(1)/Hnorm);
     gammaHJ = acos(HJ(1)/HJnorm); 
     
-    tau_d = [0 0 0].';
+    gammaT(isnan(gammaT))=0;
+    gammaH(isnan(gammaH))=0;
+    gammaHJ(isnan(gammaHJ))=0;
     
-%     tau_ext = [ Tnorm*L1*sin(gammaT+q_h(1)) + HJnorm*L1*sin(gammaHJ+q_h(1)) + Hnorm*L1*sin(gammaH+q_h(1));
-%                 Tnorm*L2*sin(gammaT+q_h(2)) + HJnorm*L2*sin(gammaHJ+q_h(2)) + Hnorm*Lh*sin(gammaH+q_h(2));
-%                 Tnorm*Lt*sin(gammaT+q_h(3)) ];
-%      tau_ext = - tau_ext;  
+    tau_d = [0 0 0].';
 
-    tau_ext = [ Tnorm*L1*sin(gammaT-q_h(1)) - HJnorm*L1*sin(gammaHJ+q_h(1)) - Hnorm*L1*sin(gammaH-q_h(1));
-                Tnorm*L2*sin(gammaT-q_h(2)) - HJnorm*L2*sin(gammaHJ+q_h(2)) - Hnorm*Lh*sin(gammaH-q_h(2));
+    
+%     tau_ext = [ -Tnorm*L1*sin(gammaT+q_h(1)) - HJnorm*L1*sin(gammaHJ+q_h(1)) - Hnorm*L1*sin(gammaH+q_h(1));
+%                 -Tnorm*L2*sin(gammaT+q_h(2)) - HJnorm*L2*sin(gammaHJ+q_h(2)) - Hnorm*Lh*sin(gammaH+q_h(2));
+%                 -Tnorm*Lt*sin(gammaT+q_h(3)) ];
+
+    tau_ext = [ Tnorm*L1*sin(gammaT-q_h(1)) + HJnorm*L1*sin(gammaHJ-q_h(1)) + Hnorm*L1*sin(gammaH-q_h(1));
+                Tnorm*L2*sin(gammaT-q_h(2)) + HJnorm*L2*sin(gammaHJ-q_h(2)) + Hnorm*Lh*sin(gammaH-q_h(2));
                 Tnorm*Lt*sin(gammaT-q_h(3)) ];
-       
+ 
 
 %     tau_ext = [ 0 0 0 ].';
 
@@ -256,8 +346,8 @@ function dx = sys(t,x)
     tau = [0; 0; 0];
     
     % state-space representation
-%     dx = [ x(4); x(5); x(6); -M(q) \ N(q,qdot)] + [zeros(3,1); M(q) \ (tau + tau_ext)]+ [zeros(3,1); -M(q) \ tau_d];
-    dx = [ x(4); x(5); x(6); lsqminnorm(-M(q),N(q,qdot))] + [zeros(3,1); lsqminnorm(M(q),(tau + tau_ext))] + [zeros(3,1); lsqminnorm(-M(q),tau_d)];
+    dx = [ x(4); x(5); x(6); -M(q) \ N(q,qdot)] + [zeros(3,1); M(q) \ (tau + tau_ext)]+ [zeros(3,1); -M(q) \ tau_d];
+%     dx = [ x(4); x(5); x(6); lsqminnorm(-M(q),N(q,qdot))] + [zeros(3,1); lsqminnorm(M(q),(tau + tau_ext))] + [zeros(3,1); lsqminnorm(-M(q),tau_d)];
     
 
     addpoints(hq1p, t, q_h(1));
@@ -276,9 +366,9 @@ function dx = sys(t,x)
     addpoints(gammaHp,  t,  gammaH);
     addpoints(gammaHJp, t, gammaHJ);
 
-    addpoints(tau1p, t, tau(1));
-    addpoints(tau2p, t, tau(2));
-    addpoints(tau3p, t, tau(3));
+    addpoints(tau1p, t, tau_ext(1));
+    addpoints(tau2p, t, tau_ext(2));
+    addpoints(tau3p, t, tau_ext(3));
 
     drawnow limitrate nocallbacks;
     
@@ -314,6 +404,22 @@ function ret = G(q)
 
 end
     
+% Friction
+function ret = F(qdot)
+   
+    brkwy_trq = [50; 50; 50;];        
+    brkwy_vel = [0.2; 0.2; 0.2];   
+    Col_trq = [40; 40; 40];
+    visc_coef = [0.002; 0.002; 0.002];
+    
+    static_scale = sqrt(2*exp(1)).*(brkwy_trq-Col_trq);
+    static_thr = sqrt(2).*brkwy_vel;                     % Velocity threshold for static torque
+    Col_thr = brkwy_vel./10;    
+    
+    ret = visc_coef .* qdot ...
+         + static_scale .* (qdot./static_thr.*exp(-(qdot./static_thr).^2)) ...
+         + Col_trq .* tanh(qdot./Col_thr); 
+end
 
 function ret = N(q,qdot)
 
