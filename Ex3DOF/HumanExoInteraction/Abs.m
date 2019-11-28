@@ -102,7 +102,7 @@ eO4x = L1*cos(eq1) + L2*cos(eq2) + L3*cos(eq3);
 eO4y = L1*sin(eq1) + L2*sin(eq2) + L3*sin(eq3);
 
 hO2x = L1*cos(hq1);
-hO2y = L1*sin(hq1);
+hO2y = L1*sin(hq1); 
 hO3x = L1*cos(hq1) + L2*cos(hq2);
 hO3y = L1*sin(hq1) + L2*sin(hq2);
 hO4x = L1*cos(hq1) + L2*cos(hq2) + L3*cos(hq3);
