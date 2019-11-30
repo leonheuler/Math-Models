@@ -21,13 +21,12 @@ m3 = 8;
 
 g = 9.81;
 
-Ch =  100000; Bh = 10000;
-Ct =  100000; Bt = 10000;
-Chj = 100000; Bhj = 10000;
+Ch =  10000; Bh = 1000;
+Ct =  1000; Bt = 100;
+Chj = 10000; Bhj = 1000;
 
 %% Simulation config
 q0 = [pi/2 pi/2 pi/2 0 0 0 ].'; % sit down
-% q0 = [pi/3 5*pi/6 pi/3 0 0 0 ].'; % stand up
 tbeg = 0;
 tend = pi;
 dt = 0.005;
@@ -39,26 +38,36 @@ fig2 = figure(2);
 clf('reset');
 global tau1p tau2p tau3p
 subplot(3,1,1);
-tau1p = animatedline('Color','k'); 
+tau1p = animatedline('Color','k'); title('Ankle torque');
 subplot(3,1,2);
-tau2p = animatedline('Color','k');
-subplot(3,1,3);
-tau3p = animatedline('Color','k');
+tau2p = animatedline('Color','k'); title('Knee torque');
+subplot(3,1,3); 
+tau3p = animatedline('Color','k'); title('Lower back torque');
 
 fig3 = figure(3);
 clf('reset');
-global hq1p hq2p hq3p eq1p eq2p eq3p
+global tau1extp tau2extp tau3extp
 subplot(3,1,1);
-hq1p = animatedline('Color','r'); hold on;
-eq1p = animatedline('Color','b');
+tau1extp = animatedline('Color','k'); title('External Ankle torque');
 subplot(3,1,2);
-hq2p = animatedline('Color','r'); hold on;
-eq2p = animatedline('Color','b');
-subplot(3,1,3);
-hq3p = animatedline('Color','r'); hold on;
-eq3p = animatedline('Color','b');
+tau2extp = animatedline('Color','k'); title('External Knee torque');
+subplot(3,1,3); 
+tau3extp = animatedline('Color','k'); title('External Lower back torque');
 
 fig4 = figure(4);
+clf('reset');
+global hq1p hq2p hq3p eq1p eq2p eq3p
+subplot(3,1,1); title('Ankle angle');
+hq1p = animatedline('Color','r'); hold on;
+eq1p = animatedline('Color','b'); legend('Human','Exo');
+subplot(3,1,2); title('Knee angle')
+hq2p = animatedline('Color','r'); hold on;
+eq2p = animatedline('Color','b'); legend('Human','Exo');
+subplot(3,1,3); title('Lower back angle')
+hq3p = animatedline('Color','r'); hold on;
+eq3p = animatedline('Color','b'); legend('Human','Exo');
+
+fig5 = figure(5);
 clf('reset');
 global Hp HJp Tp gammaHp gammaHJp gammaTp
 subplot(3,2,5);
@@ -80,9 +89,9 @@ clf('reset');
 opts = odeset('OutputFcn',@odeplot); 
 %% Simlation 
 tic;
-% [t,q] = ode23s(@sys, tspan, q0, opts);
-q = ode4(@sys,tspan,q0);
-toc;    
+[t,q] = ode23s(@sys, tspan, q0, opts);
+% q = ode4(@sys,tspan,q0);
+toc;
 
 %% Collect data from plots 
 [~, eq1] = getpoints(eq1p);
@@ -130,6 +139,7 @@ eTy =  L1*sin(eq1)+L2*sin(eq2) + Lt*sin(eq3);
 %% Animation
 fig6 = figure(6);
 clf('reset');
+title('Sit Down');
 human = animatedline('Marker','o','Color', 'black','LineWidth',1.25); hold on;    
 exo =   animatedline('Marker','o','Color', 'blue','LineWidth',1.25);
 
@@ -258,6 +268,7 @@ function dx = sys(t,x)
     global m1 m2 m3 L1 L2 L3 g Lh Lt 
     global Ch Chj Ct Bh Bhj Bt
     global tau1p tau2p tau3p
+    global tau1extp tau2extp tau3extp
     global hq1p hq2p hq3p
     global eq1p eq2p eq3p
     global Hp HJp Tp
@@ -279,15 +290,7 @@ function dx = sys(t,x)
     qdot_h = [-pi/12*sin(t);
               pi/6*sin(t);
               -pi/12*sin(t) ];
-        
-    % stand up
-%     q_h = [ 5*pi/12-pi/12*cos(t);   
-%             2*pi/3+pi/6*cos(t);       
-%             5*pi/12-pi/12*cos(t) ];
-%     qdot_h = [pi/12*sin(t);
-%               -pi/6*sin(t);
-%               pi/12*sin(t) ];
-        
+       
         % Human points of contact  
     hH = [ L1*cos(q_h(1))+Lh*cos(q_h(2));
            L1*sin(q_h(1))+Lh*sin(q_h(2)) ];
@@ -347,39 +350,17 @@ function dx = sys(t,x)
     gammaHJ(isnan(gammaHJ))=0;
     
     tau_d = [0 0 0].';
-
+    tau = [0 0 0].';
+    
     % sit down
     tau_ext = [ -Tnorm*L1*sin(gammaT+q_h(1)) - HJnorm*L1*sin(gammaHJ+q_h(1)) - Hnorm*L1*sin(gammaH+q_h(1));
                 -Tnorm*L2*sin(gammaT+q_h(2)) - HJnorm*L2*sin(gammaHJ+q_h(2)) - Hnorm*Lh*sin(gammaH+q_h(2));
                 -Tnorm*Lt*sin(gammaT+q_h(3)) ];
-    % stand up
-%     tau_ext = [ Tnorm*L1*sin(gammaT-q_h(1)) + HJnorm*L1*sin(gammaHJ-q_h(1)) + Hnorm*L1*sin(gammaH-q_h(1));
-%                 Tnorm*L2*sin(gammaT-q_h(2)) + HJnorm*L2*sin(gammaHJ-q_h(2)) + Hnorm*Lh*sin(gammaH-q_h(2));
-%                 Tnorm*Lt*sin(gammaT-q_h(3)) ];
- 
 
-%     tau_ext = [ 0 0 0 ].';
-
-    % Errors
-%     e = q_d - q;
-%     edot = qdot_d - qdot;
-    
-    % PID config
-%     w = 100;
-%     Kp = diag([w^2 w^2 w^2]);
-%     Kv = diag([2*w 2*w 2*w]);
-
-    % Control law
-%     tau = M(q)*(Kp*e + Kv*edot) + N(q,qdot);         % CTC
-%     tau = Kp*e + Kv*e_dot + vecG;               % PD-plus-Gravity
-    tau = G(q);
-%     tau = [0; 0; 0];
     
     % state-space representation
-%     dx = [ x(4); x(5); x(6); -M(q) \ N(q,qdot)] + [zeros(3,1); M(q) \ (tau + tau_ext)]+ [zeros(3,1); -M(q) \ tau_d];
     dx = [ x(4); x(5); x(6); lsqminnorm(-M(q),N(q,qdot))] + [zeros(3,1); lsqminnorm(M(q),(tau + tau_ext))] + [zeros(3,1); lsqminnorm(-M(q),tau_d)];
     
-
     addpoints(hq1p, t, q_h(1));
     addpoints(hq2p, t, q_h(2));
     addpoints(hq3p, t, q_h(3));
@@ -396,10 +377,14 @@ function dx = sys(t,x)
     addpoints(gammaHp,  t,  gammaH);
     addpoints(gammaHJp, t, gammaHJ);
 
-    addpoints(tau1p, t, tau_ext(1));
-    addpoints(tau2p, t, tau_ext(2));
-    addpoints(tau3p, t, tau_ext(3));
+    addpoints(tau1extp, t, tau_ext(1));
+    addpoints(tau2extp, t, tau_ext(2));
+    addpoints(tau3extp, t, tau_ext(3));
 
+    addpoints(tau1p, t, tau(1));
+    addpoints(tau2p, t, tau(2));
+    addpoints(tau3p, t, tau(3));
+    
     drawnow limitrate nocallbacks;
     
 end
@@ -437,10 +422,10 @@ end
 % Friction
 function ret = F(qdot)
    
-    brkwy_trq = [50; 50; 50;];        
-    brkwy_vel = [0.2; 0.2; 0.2];   
-    Col_trq = [40; 40; 40];
-    visc_coef = [0.002; 0.002; 0.002];
+    brkwy_trq = [100; 100; 100;];        
+    brkwy_vel = [0.4; 0.4; 0.4];   
+    Col_trq = [80; 80; 80];
+    visc_coef = [0.004; 0.004; 0.004];
     
     static_scale = sqrt(2*exp(1)).*(brkwy_trq-Col_trq);
     static_thr = sqrt(2).*brkwy_vel;                     % Velocity threshold for static torque

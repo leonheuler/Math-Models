@@ -21,15 +21,14 @@ m3 = 8;
 
 g = 9.81;
 
-Ch =  100000; Bh = 10000;
-Ct =  100000; Bt = 10000;
-Chj = 100000; Bhj = 10000;
+Ch =  1000; Bh = 100;
+Ct =  1000; Bt = 100;
+Chj = 1000; Bhj = 100;
 
 %% Simulation config
-q0 = [pi/2 pi/2 pi/2 0 0 0 ].'; % sit down
-% q0 = [pi/3 5*pi/6 pi/3 0 0 0 ].'; % stand up
+q0 = [pi/2 pi/2 pi/2 0 0 0 ].'; 
 tbeg = 0;
-tend = pi;
+tend = 2*pi;
 dt = 0.005;
 tspan = tbeg:dt:tend; 
 maxit = ceil((tend - tbeg) / dt);
@@ -62,17 +61,17 @@ fig4 = figure(4);
 clf('reset');
 global Hp HJp Tp gammaHp gammaHJp gammaTp
 subplot(3,2,5);
-Hp =  animatedline(); title('Hip spring magnitude');
+Hp =  animatedline();
 subplot(3,2,6);
-gammaHp = animatedline(); title('Hip spring angle');
+gammaHp = animatedline();
 subplot(3,2,3);
-HJp = animatedline(); title('Hip Joint spring magnitude');
+HJp = animatedline();
 subplot(3,2,4);
-gammaHJp = animatedline(); title('Hip Joint spring magnitude');
+gammaHJp = animatedline();
 subplot(3,2,1);
-Tp =  animatedline(); title('Torso spring magnitude');
+Tp =  animatedline();
 subplot(3,2,2);
-gammaTp =  animatedline(); title('Torso spring angle');
+gammaTp =  animatedline();
 
 %% Solver config
 fig1 = figure(1);
@@ -82,7 +81,7 @@ opts = odeset('OutputFcn',@odeplot);
 tic;
 % [t,q] = ode23s(@sys, tspan, q0, opts);
 q = ode4(@sys,tspan,q0);
-toc;    
+toc;
 
 %% Collect data from plots 
 [~, eq1] = getpoints(eq1p);
@@ -272,23 +271,15 @@ function dx = sys(t,x)
     end
     
     % Human trajectory in joint space
-    % sit down
-    q_h = [ 5*pi/12+pi/12*cos(t);   
-            2*pi/3-pi/6*cos(t);       
-            5*pi/12+pi/12*cos(t) ];
-    qdot_h = [-pi/12*sin(t);
-              pi/6*sin(t);
-              -pi/12*sin(t) ];
+    q_h = [ pi/2+pi/6*sin(t);
+            pi/2+pi/6*sin(t);
+            pi/2+pi/6*sin(t) ];
         
-    % stand up
-%     q_h = [ 5*pi/12-pi/12*cos(t);   
-%             2*pi/3+pi/6*cos(t);       
-%             5*pi/12-pi/12*cos(t) ];
-%     qdot_h = [pi/12*sin(t);
-%               -pi/6*sin(t);
-%               pi/12*sin(t) ];
+    qdot_h = [pi/6*cos(t);
+              pi/6*cos(t);
+              pi/6*cos(t) ];
         
-        % Human points of contact  
+    % Human points of contact  
     hH = [ L1*cos(q_h(1))+Lh*cos(q_h(2));
            L1*sin(q_h(1))+Lh*sin(q_h(2)) ];
     
@@ -348,32 +339,12 @@ function dx = sys(t,x)
     
     tau_d = [0 0 0].';
 
-    % sit down
-    tau_ext = [ -Tnorm*L1*sin(gammaT+q_h(1)) - HJnorm*L1*sin(gammaHJ+q_h(1)) - Hnorm*L1*sin(gammaH+q_h(1));
-                -Tnorm*L2*sin(gammaT+q_h(2)) - HJnorm*L2*sin(gammaHJ+q_h(2)) - Hnorm*Lh*sin(gammaH+q_h(2));
-                -Tnorm*Lt*sin(gammaT+q_h(3)) ];
-    % stand up
-%     tau_ext = [ Tnorm*L1*sin(gammaT-q_h(1)) + HJnorm*L1*sin(gammaHJ-q_h(1)) + Hnorm*L1*sin(gammaH-q_h(1));
-%                 Tnorm*L2*sin(gammaT-q_h(2)) + HJnorm*L2*sin(gammaHJ-q_h(2)) + Hnorm*Lh*sin(gammaH-q_h(2));
-%                 Tnorm*Lt*sin(gammaT-q_h(3)) ];
- 
 
-%     tau_ext = [ 0 0 0 ].';
+    tau_ext = [ Tnorm*L1*sin(gammaT-q_h(1)) + HJnorm*L1*sin(gammaHJ-q_h(1)) + Hnorm*L1*sin(gammaH-q_h(1));
+                Tnorm*L2*sin(gammaT-q_h(2)) + HJnorm*L2*sin(gammaHJ-q_h(2)) + Hnorm*Lh*sin(gammaH-q_h(2));
+                Tnorm*Lt*sin(gammaT-q_h(3)) ];
 
-    % Errors
-%     e = q_d - q;
-%     edot = qdot_d - qdot;
-    
-    % PID config
-%     w = 100;
-%     Kp = diag([w^2 w^2 w^2]);
-%     Kv = diag([2*w 2*w 2*w]);
-
-    % Control law
-%     tau = M(q)*(Kp*e + Kv*edot) + N(q,qdot);         % CTC
-%     tau = Kp*e + Kv*e_dot + vecG;               % PD-plus-Gravity
-    tau = G(q);
-%     tau = [0; 0; 0];
+    tau = [0; 0; 0];
     
     % state-space representation
 %     dx = [ x(4); x(5); x(6); -M(q) \ N(q,qdot)] + [zeros(3,1); M(q) \ (tau + tau_ext)]+ [zeros(3,1); -M(q) \ tau_d];
