@@ -21,15 +21,17 @@ m3 = 8;
 
 g = 9.81;
 
-Ch =  1000; Bh = 100;
-Ct =  1000; Bt = 100;
-Chj = 1000; Bhj = 100;
+var1 = 1000;
+Ch =  var1; Bh = 0;
+Ct =  var1; Bt = 0;
+Chj = var1; Bhj = 0;
 
 %% Simulation config
-q0 = [pi/2 pi/2 pi/2 0 0 0 ].'; 
+% q0 = [pi/2 pi/2 pi/2 0 0 0 ].'; 
+q0 = [pi/4 pi/2+pi/4 pi/4 0 0 0 ].'; 
 tbeg = 0;
 tend = 2*pi;
-dt = 0.005;
+dt = 0.1;
 tspan = tbeg:dt:tend; 
 maxit = ceil((tend - tbeg) / dt);
 
@@ -38,40 +40,50 @@ fig2 = figure(2);
 clf('reset');
 global tau1p tau2p tau3p
 subplot(3,1,1);
-tau1p = animatedline('Color','k'); 
+tau1p = animatedline('Color','k'); title('Ankle torque');
 subplot(3,1,2);
-tau2p = animatedline('Color','k');
-subplot(3,1,3);
-tau3p = animatedline('Color','k');
+tau2p = animatedline('Color','k'); title('Knee torque');
+subplot(3,1,3); 
+tau3p = animatedline('Color','k'); title('Lower back torque');
 
 fig3 = figure(3);
 clf('reset');
-global hq1p hq2p hq3p eq1p eq2p eq3p
+global tau1extp tau2extp tau3extp
 subplot(3,1,1);
-hq1p = animatedline('Color','r'); hold on;
-eq1p = animatedline('Color','b');
+tau1extp = animatedline('Color','k'); title('External Ankle torque');
 subplot(3,1,2);
-hq2p = animatedline('Color','r'); hold on;
-eq2p = animatedline('Color','b');
-subplot(3,1,3);
-hq3p = animatedline('Color','r'); hold on;
-eq3p = animatedline('Color','b');
+tau2extp = animatedline('Color','k'); title('External Knee torque');
+subplot(3,1,3); 
+tau3extp = animatedline('Color','k'); title('External Lower back torque');
 
 fig4 = figure(4);
 clf('reset');
+global hq1p hq2p hq3p eq1p eq2p eq3p
+subplot(3,1,1); title('Ankle angle');
+hq1p = animatedline('Color','r'); hold on;
+eq1p = animatedline('Color','b'); legend('Human','Exo');
+subplot(3,1,2); title('Knee angle')
+hq2p = animatedline('Color','r'); hold on;
+eq2p = animatedline('Color','b'); legend('Human','Exo');
+subplot(3,1,3); title('Lower back angle')
+hq3p = animatedline('Color','r'); hold on;
+eq3p = animatedline('Color','b'); legend('Human','Exo');
+
+fig5 = figure(5);
+clf('reset');
 global Hp HJp Tp gammaHp gammaHJp gammaTp
 subplot(3,2,5);
-Hp =  animatedline();
+Hp =  animatedline(); title('Hip spring magnitude');
 subplot(3,2,6);
-gammaHp = animatedline();
+gammaHp = animatedline(); title('Hip spring angle');
 subplot(3,2,3);
-HJp = animatedline();
+HJp = animatedline(); title('Hip Joint spring magnitude');
 subplot(3,2,4);
-gammaHJp = animatedline();
+gammaHJp = animatedline(); title('Hip Joint spring magnitude');
 subplot(3,2,1);
-Tp =  animatedline();
+Tp =  animatedline(); title('Torso spring magnitude');
 subplot(3,2,2);
-gammaTp =  animatedline();
+gammaTp =  animatedline(); title('Torso spring angle');
 
 %% Solver config
 fig1 = figure(1);
@@ -79,8 +91,8 @@ clf('reset');
 opts = odeset('OutputFcn',@odeplot); 
 %% Simlation 
 tic;
-% [t,q] = ode23s(@sys, tspan, q0, opts);
-q = ode4(@sys,tspan,q0);
+[t,q] = ode23s(@sys, tspan, q0, opts);
+% q = ode4(@sys,tspan,q0);
 toc;
 
 %% Collect data from plots 
@@ -251,12 +263,14 @@ addpoints(foot, 0, 0);
 addpoints(foot, 0.24, 0);
 
 drawnow;
+
 %% ODE system in non-linear state-space representation
 function dx = sys(t,x)
 
     global m1 m2 m3 L1 L2 L3 g Lh Lt 
     global Ch Chj Ct Bh Bhj Bt
     global tau1p tau2p tau3p
+    global tau1extp tau2extp tau3extp
     global hq1p hq2p hq3p
     global eq1p eq2p eq3p
     global Hp HJp Tp
@@ -271,14 +285,17 @@ function dx = sys(t,x)
     end
     
     % Human trajectory in joint space
-    q_h = [ pi/2+pi/6*sin(t);
-            pi/2+pi/6*sin(t);
-            pi/2+pi/6*sin(t) ];
-        
-    qdot_h = [pi/6*cos(t);
-              pi/6*cos(t);
-              pi/6*cos(t) ];
-        
+%     q_h = [ pi/2+pi/6*sin(t);
+%             pi/2+pi/6*sin(t);
+%             pi/2+pi/6*sin(t) ];
+%         
+%     qdot_h = [pi/6*cos(t);
+%               pi/6*cos(t);
+%               pi/6*cos(t) ];
+
+    q_h = [pi/4 pi/2+pi/4 pi/4].';
+    qdot_h = [0 0 0].';
+
     % Human points of contact  
     hH = [ L1*cos(q_h(1))+Lh*cos(q_h(2));
            L1*sin(q_h(1))+Lh*sin(q_h(2)) ];
@@ -326,23 +343,25 @@ function dx = sys(t,x)
     Tnorm = norm(T);
     Hnorm = norm(H);
     HJnorm = norm(HJ);
+    Flnorm = 60;
     
     % Reaction forces absolute angles
     gammaT = acos(T(1)/Tnorm);
     gammaH = acos(H(1)/Hnorm);
     gammaHJ = acos(HJ(1)/HJnorm); 
-    
+    gammaFl = pi/2;
+
     % Check if any magnitude is zero
     gammaT(isnan(gammaT))=0;
     gammaH(isnan(gammaH))=0;
     gammaHJ(isnan(gammaHJ))=0;
     
     tau_d = [0 0 0].';
+    
 
-
-    tau_ext = [ Tnorm*L1*sin(gammaT-q_h(1)) + HJnorm*L1*sin(gammaHJ-q_h(1)) + Hnorm*L1*sin(gammaH-q_h(1));
-                Tnorm*L2*sin(gammaT-q_h(2)) + HJnorm*L2*sin(gammaHJ-q_h(2)) + Hnorm*Lh*sin(gammaH-q_h(2));
-                Tnorm*Lt*sin(gammaT-q_h(3)) ];
+    tau_ext = [ -Flnorm*L1*sin(gammaFl-q(1)) + Tnorm*L1*sin(gammaT-q(1)) + HJnorm*L1*sin(gammaHJ-q(1)) + Hnorm*L1*sin(gammaH-q(1));
+                -Flnorm*L2*sin(gammaFl-q(2)) + Tnorm*L2*sin(gammaT-q(2)) + HJnorm*L2*sin(gammaHJ-q(2)) +   Hnorm*Lh*sin(gammaH-q(2));
+                -Flnorm*L3*sin(gammaFl-q(3)) + Tnorm*Lt*sin(gammaT-q(3)) ];
 
     tau = [0; 0; 0];
     
@@ -351,6 +370,7 @@ function dx = sys(t,x)
     dx = [ x(4); x(5); x(6); lsqminnorm(-M(q),N(q,qdot))] + [zeros(3,1); lsqminnorm(M(q),(tau + tau_ext))] + [zeros(3,1); lsqminnorm(-M(q),tau_d)];
     
 
+    
     addpoints(hq1p, t, q_h(1));
     addpoints(hq2p, t, q_h(2));
     addpoints(hq3p, t, q_h(3));
@@ -363,14 +383,18 @@ function dx = sys(t,x)
     addpoints(HJp, t, HJnorm);
     addpoints(Tp , t,  Tnorm);
     
-    addpoints(gammaTp,  t,  gammaT);
-    addpoints(gammaHp,  t,  gammaH);
-    addpoints(gammaHJp, t, gammaHJ);
+    addpoints(gammaTp,  t,  gammaT*(180/pi));
+    addpoints(gammaHp,  t,  gammaH*(180/pi));
+    addpoints(gammaHJp, t, gammaHJ*(180/pi));
 
-    addpoints(tau1p, t, tau_ext(1));
-    addpoints(tau2p, t, tau_ext(2));
-    addpoints(tau3p, t, tau_ext(3));
+    addpoints(tau1extp, t, tau_ext(1));
+    addpoints(tau2extp, t, tau_ext(2));
+    addpoints(tau3extp, t, tau_ext(3));
 
+%     addpoints(tau1p, t, tau(1));
+%     addpoints(tau2p, t, tau(2));
+%     addpoints(tau3p, t, tau(3));
+    
     drawnow limitrate nocallbacks;
     
 end
