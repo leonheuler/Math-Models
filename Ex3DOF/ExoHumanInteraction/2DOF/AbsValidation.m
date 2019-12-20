@@ -21,15 +21,17 @@ m3 = 8;
 
 g = 9.81;
 
-Ch =  10000; Bh = 1000;
-Ct =  1000; Bt = 100;
-Chj = 10000; Bhj = 100;
+var1 = 0;
+Ch =  var1; Bh = var1/10; %Bh = var1/10;
+Ct =  var1; Bt = var1/10; %Bt = var1/10;
+Chj = var1; Bhj = var1/10; %Bhj = var1/10;
 
 %% Simulation config
-q0 = [pi/3 5*pi/6 pi/3 0 0 0 ].'; % stand up
+% q0 = [pi/2 pi/2 pi/2 0 0 0 ].'; 
+q0 = [pi/4 pi/4 pi/4 0 0 0 ].'; 
 tbeg = 0;
 tend = pi;
-dt = 0.005;
+dt = 0.01;
 tspan = tbeg:dt:tend; 
 maxit = ceil((tend - tbeg) / dt);
 
@@ -41,7 +43,7 @@ subplot(3,1,1);
 tau1p = animatedline('Color','k'); title('Ankle torque');
 subplot(3,1,2);
 tau2p = animatedline('Color','k'); title('Knee torque');
-subplot(3,1,3);
+subplot(3,1,3); 
 tau3p = animatedline('Color','k'); title('Lower back torque');
 
 fig3 = figure(3);
@@ -53,7 +55,6 @@ subplot(3,1,2);
 tau2extp = animatedline('Color','k'); title('External Knee torque');
 subplot(3,1,3); 
 tau3extp = animatedline('Color','k'); title('External Lower back torque');
-
 
 fig4 = figure(4);
 clf('reset');
@@ -140,7 +141,6 @@ eTy =  L1*sin(eq1)+L2*sin(eq2) + Lt*sin(eq3);
 %% Animation
 fig6 = figure(6);
 clf('reset');
-title('Stand UP');
 human = animatedline('Marker','o','Color', 'black','LineWidth',1.25); hold on;    
 exo =   animatedline('Marker','o','Color', 'blue','LineWidth',1.25);
 
@@ -263,6 +263,7 @@ addpoints(foot, 0, 0);
 addpoints(foot, 0.24, 0);
 
 drawnow;
+
 %% ODE system in non-linear state-space representation
 function dx = sys(t,x)
 
@@ -279,21 +280,23 @@ function dx = sys(t,x)
     q = [x(1); x(2); x(3) ];
     qdot = [x(4); x(5); x(6)];
     
-    if (q(2) - q(1) < 0)
-        q(2) = q(1);
-    end
+%     if (q(2) - q(1) < 0)
+%         q(2) = q(1);
+%     end
     
     % Human trajectory in joint space
-    
-    % stand up
-    q_h = [ 5*pi/12-pi/12*cos(t);   
-            2*pi/3+pi/6*cos(t);       
-            5*pi/12-pi/12*cos(t) ];
-    qdot_h = [pi/12*sin(t);
-              -pi/6*sin(t);
-              pi/12*sin(t) ];
-        
-        % Human points of contact  
+%     q_h = [ pi/2+pi/6*sin(t);
+%             pi/2+pi/6*sin(t);
+%             pi/2+pi/6*sin(t) ];
+%         
+%     qdot_h = [pi/6*cos(t);
+%               pi/6*cos(t);
+%               pi/6*cos(t) ];
+
+    q_h = [pi/4 pi/4 pi/4].';
+    qdot_h = [0 0 0].';
+
+    % Human points of contact  
     hH = [ L1*cos(q_h(1))+Lh*cos(q_h(2));
            L1*sin(q_h(1))+Lh*sin(q_h(2)) ];
     
@@ -340,30 +343,34 @@ function dx = sys(t,x)
     Tnorm = norm(T);
     Hnorm = norm(H);
     HJnorm = norm(HJ);
+    Flnorm = 60;
     
     % Reaction forces absolute angles
     gammaT = acos(T(1)/Tnorm);
     gammaH = acos(H(1)/Hnorm);
     gammaHJ = acos(HJ(1)/HJnorm); 
-    
+    gammaFl = pi/2;
+
     % Check if any magnitude is zero
     gammaT(isnan(gammaT))=0;
     gammaH(isnan(gammaH))=0;
     gammaHJ(isnan(gammaHJ))=0;
     
     tau_d = [0 0 0].';
+    
+
+    tau_ext = [ -Flnorm*L1*sin(gammaFl-q(1)) + Tnorm*L1*sin(gammaT-q(1)) + HJnorm*L1*sin(gammaHJ-q(1)) + Hnorm*L1*sin(gammaH-q(1));
+                -Flnorm*L2*sin(gammaFl-q(2)) + Tnorm*L2*sin(gammaT-q(2)) + HJnorm*L2*sin(gammaHJ-q(2)) +   Hnorm*Lh*sin(gammaH-q(2));
+                -Flnorm*L3*sin(gammaFl-q(3)) + Tnorm*Lt*sin(gammaT-q(3)) ];
+
     tau = [0; 0; 0];
     
-    % stand up
-    tau_ext = [ Tnorm*L1*sin(gammaT-q_h(1)) + HJnorm*L1*sin(gammaHJ-q_h(1)) + Hnorm*L1*sin(gammaH-q_h(1));
-                Tnorm*L2*sin(gammaT-q_h(2)) + HJnorm*L2*sin(gammaHJ-q_h(2)) + Hnorm*Lh*sin(gammaH-q_h(2));
-                Tnorm*Lt*sin(gammaT-q_h(3)) ];
- 
     % state-space representation
 %     dx = [ x(4); x(5); x(6); -M(q) \ N(q,qdot)] + [zeros(3,1); M(q) \ (tau + tau_ext)]+ [zeros(3,1); -M(q) \ tau_d];
     dx = [ x(4); x(5); x(6); lsqminnorm(-M(q),N(q,qdot))] + [zeros(3,1); lsqminnorm(M(q),(tau + tau_ext))] + [zeros(3,1); lsqminnorm(-M(q),tau_d)];
     
 
+    
     addpoints(hq1p, t, q_h(1));
     addpoints(hq2p, t, q_h(2));
     addpoints(hq3p, t, q_h(3));
@@ -376,18 +383,18 @@ function dx = sys(t,x)
     addpoints(HJp, t, HJnorm);
     addpoints(Tp , t,  Tnorm);
     
-    addpoints(gammaTp,  t,  gammaT);
-    addpoints(gammaHp,  t,  gammaH);
-    addpoints(gammaHJp, t, gammaHJ);
+    addpoints(gammaTp,  t,  gammaT*(180/pi));
+    addpoints(gammaHp,  t,  gammaH*(180/pi));
+    addpoints(gammaHJp, t, gammaHJ*(180/pi));
 
     addpoints(tau1extp, t, tau_ext(1));
     addpoints(tau2extp, t, tau_ext(2));
     addpoints(tau3extp, t, tau_ext(3));
 
-    addpoints(tau1p, t, tau(1));
-    addpoints(tau2p, t, tau(2));
-    addpoints(tau3p, t, tau(3));
-
+%     addpoints(tau1p, t, tau(1));
+%     addpoints(tau2p, t, tau(2));
+%     addpoints(tau3p, t, tau(3));
+    
     drawnow limitrate nocallbacks;
     
 end
@@ -425,10 +432,10 @@ end
 % Friction
 function ret = F(qdot)
    
-    brkwy_trq = [25; 25; 25;];        
-    brkwy_vel = [0.1; 0.1; 0.1];   
-    Col_trq = [20; 20; 20];
-    visc_coef = [0.001; 0.001; 0.001];
+    brkwy_trq = [50; 50; 50;];        
+    brkwy_vel = [0.2; 0.2; 0.2];   
+    Col_trq = [40; 40; 40];
+    visc_coef = [0.002; 0.002; 0.002];
     
     static_scale = sqrt(2*exp(1)).*(brkwy_trq-Col_trq);
     static_thr = sqrt(2).*brkwy_vel;                     % Velocity threshold for static torque
@@ -441,7 +448,7 @@ end
 
 function ret = N(q,qdot)
 
-    ret = V(q,qdot) + G(q) + F(qdot);
+    ret = V(q,qdot) + G(q);% + F(qdot);
 
 end
     
